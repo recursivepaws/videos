@@ -10,32 +10,46 @@ class CreateCircle(Scene):
 class TransformMatchingShapesFromCopy(Scene):
     def construct(self):
         # Method 2: More explicit - add copies first, then transform
-        word1 = m_deva.Deva_Tex("पर", font_size=72)
-        word2 = m_deva.Deva_Tex("उपकार", font_size=72)
-        combined = m_deva.Deva_Tex("परोपकार", font_size=72)
+        left = m_deva.Deva_Tex("पर", font_size=72)
+        plus = Text("+", font_size=72)
+        right = m_deva.Deva_Tex("उपकार", font_size=72)
+        whole = m_deva.Deva_Tex("पर","ो","पकार", font_size=72)
 
-        word1.shift(LEFT * 2)
-        word2.shift(RIGHT * 2)
-        combined.move_to(ORIGIN).set_y(word1.get_y())
+        left.next_to(plus, LEFT)
+        right.next_to(plus, RIGHT)
+        whole.next_to(plus, DOWN)
 
-        self.add(word1, word2)
-        self.wait(1)
+        self.play(Write(left), Write(plus), Write(right))
+        self.wait()
 
         # Create copies and add them to the scene
-        word1_copy = word1.copy()
-        word2_copy = word2.copy()
-        self.add(word1_copy, word2_copy)
+        left_copy = left.copy()
+        right_copy = right.copy()
+        left_copy.generate_target()
+        right_copy.generate_target()
+        left_copy.target.shift(DOWN)
+        right_copy.target.shift(DOWN)
+        self.add(left_copy, right_copy)
+
+        self.play(
+            MoveToTarget(left_copy),
+            MoveToTarget(right_copy)
+        )
 
         # Transform the copies
         self.play(
-            TransformMatchingShapes(Group(word1_copy, word2_copy), combined),
+            TransformMatchingShapes(Group(left_copy, right_copy), Group(whole)),
             run_time=2
         )
 
         self.wait(1)
 
         # Now fade out the originals
-        self.play(FadeOut(word1), FadeOut(word2))
+        self.play(FadeOut(left), FadeOut(plus), FadeOut(right))
+
+        whole.generate_target()
+        whole.target.shift(UP)
+        self.play(MoveToTarget(whole))
 
         self.wait(2)
 
@@ -290,3 +304,40 @@ class WordSmash(Scene):
         # )
 
         self.wait(1)
+
+class Deconstruct(Scene):
+    def construct(self):
+        word = m_deva.Deva_Tex("प", "रो","पकार")
+        left = m_deva.Deva_Tex("पर")
+        right = m_deva.Deva_Tex("उपकार")
+
+        word.move_to(ORIGIN)
+
+        left.shift(LEFT * 2)
+        right.shift(RIGHT * 2)
+
+        self.play(Write(word))
+        self.wait()
+
+        # Create copies and add them to the scene
+        child = word.copy()
+        self.play(child.animate.move_to(DOWN))
+
+        plus = Text("+")
+        plus.move_to(child)
+        left.next_to(plus, LEFT)
+        right.next_to(plus, RIGHT)
+
+        # Transform the copies
+        self.play(
+            AnimationGroup(
+                FadeIn(plus),
+                TransformMatchingShapes(child, Group(left, right)),
+            ),
+            run_time=2
+        )
+
+        # Now fade out the originals
+        # self.play(combin)
+
+        self.wait(2)

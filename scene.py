@@ -1,11 +1,13 @@
 from manim import *
 import manim_devanagari as m_deva
 
+
 class CreateCircle(Scene):
     def construct(self):
         circle = Circle()  # create a circle
         circle.set_fill(PINK, opacity=0.5)  # set the color and transparency
         self.play(Create(circle))  # show the circle on screen
+
 
 class TransformMatchingShapesFromCopy(Scene):
     def construct(self):
@@ -13,7 +15,7 @@ class TransformMatchingShapesFromCopy(Scene):
         left = m_deva.Deva_Tex("पर", font_size=72)
         plus = Text("+", font_size=72)
         right = m_deva.Deva_Tex("उपकार", font_size=72)
-        whole = m_deva.Deva_Tex("पर","ो","पकार", font_size=72)
+        whole = m_deva.Deva_Tex("पर", "ो", "पकार", font_size=72)
 
         left.next_to(plus, LEFT)
         right.next_to(plus, RIGHT)
@@ -31,15 +33,12 @@ class TransformMatchingShapesFromCopy(Scene):
         right_copy.target.shift(DOWN)
         self.add(left_copy, right_copy)
 
-        self.play(
-            MoveToTarget(left_copy),
-            MoveToTarget(right_copy)
-        )
+        self.play(MoveToTarget(left_copy), MoveToTarget(right_copy))
 
         # Transform the copies
         self.play(
             TransformMatchingShapes(Group(left_copy, right_copy), Group(whole)),
-            run_time=2
+            run_time=2,
         )
 
         self.wait(1)
@@ -52,6 +51,7 @@ class TransformMatchingShapesFromCopy(Scene):
         self.play(MoveToTarget(whole))
 
         self.wait(2)
+
 
 class Meow(Scene):
     def construct(self):
@@ -79,6 +79,7 @@ class Meow(Scene):
         )
         self.wait()
         self.wait(1.0)
+
 
 class TransformTypes(Scene):
     def construct(self):
@@ -121,7 +122,9 @@ class TransformTypes(Scene):
 
         self.play(Create(square))
         self.wait(0.5)
-        self.play(TransformFromCopy(square, circle))  # square stays, copy becomes circle
+        self.play(
+            TransformFromCopy(square, circle)
+        )  # square stays, copy becomes circle
         self.wait(0.5)
         self.play(FadeOut(square), FadeOut(circle))
         self.remove(title3)
@@ -136,7 +139,9 @@ class TransformTypes(Scene):
 
         self.play(Create(square))
         self.wait(0.5)
-        self.play(ClockwiseTransform(square, circle))  # Rotates clockwise while morphing
+        self.play(
+            ClockwiseTransform(square, circle)
+        )  # Rotates clockwise while morphing
         self.wait(0.5)
         self.play(FadeOut(square))
         self.remove(title4)
@@ -191,6 +196,7 @@ class TransformTypes(Scene):
 
         self.wait(1)
 
+
 class TransformGroupTest(Scene):
     def construct(self):
         # Test 1: TransformMatchingShapes with Group
@@ -207,10 +213,7 @@ class TransformGroupTest(Scene):
         self.wait(1)
 
         # Try transforming the group
-        self.play(
-            TransformMatchingShapes(Group(word1, word2), combined),
-            run_time=2
-        )
+        self.play(TransformMatchingShapes(Group(word1, word2), combined), run_time=2)
 
         self.wait(2)
 
@@ -229,12 +232,10 @@ class TransformGroupTest(Scene):
         self.wait(1)
 
         # Try with ReplacementTransform
-        self.play(
-            ReplacementTransform(Group(word1, word2), combined2),
-            run_time=2
-        )
+        self.play(ReplacementTransform(Group(word1, word2), combined2), run_time=2)
 
         self.wait(2)
+
 
 class WordSmash(Scene):
     def construct(self):
@@ -254,7 +255,6 @@ class WordSmash(Scene):
         # Animate words moving toward center
         self.play(FadeOut(plus, scale=0.5), run_time=0.3)
 
-
         # Create the combined word
         combined = m_deva.Deva_Tex("परोपकार", font_size=72).move_to(ORIGIN)
         flash = Circle(radius=0.3, color=YELLOW, fill_opacity=0.8).move_to(ORIGIN)
@@ -271,7 +271,7 @@ class WordSmash(Scene):
                     # FadeOut(word2, scale=0.8),
                     FadeIn(combined, scale=1.2),
                 ),
-                lag_ratio=0.8
+                lag_ratio=0.8,
             ),
             run_time=1,
             rate_func=rush_into,
@@ -281,12 +281,11 @@ class WordSmash(Scene):
             FadeOut(word2, scale=0.8),
             combined.animate.scale(1.1),
             rate_func=there_and_back,
-            run_time=0.4
+            run_time=0.4,
         )
 
         # Create flash effect on collision
         # self.remove(flash)
-
 
         # Transform to combined word
         # self.play(
@@ -305,9 +304,10 @@ class WordSmash(Scene):
 
         self.wait(1)
 
+
 class Deconstruct(Scene):
     def construct(self):
-        word = m_deva.Deva_Tex("प", "रो","पकार")
+        word = m_deva.Deva_Tex("प", "रो", "पकार")
         left = m_deva.Deva_Tex("पर")
         right = m_deva.Deva_Tex("उपकार")
 
@@ -334,7 +334,7 @@ class Deconstruct(Scene):
                 FadeIn(plus),
                 TransformMatchingShapes(child, Group(left, right)),
             ),
-            run_time=2
+            run_time=2,
         )
 
         # Now fade out the originals

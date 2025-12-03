@@ -1,21 +1,23 @@
 from janim.imports import *
 
+scale = 2.0
+def Devanagari(text):
+    return TypstText('#text(font: "Jaini")[%s]' % text, scale=scale)
 
-class HelloJAnimExample(Timeline):
+class CombineV2(Timeline):
     def construct(self):
+        dur = 5
         # define items
-        left = TypstText("पर")
-        right = TypstText("उपकार")
-        plus = TypstText("$+$")
-        whole = TypstText("परोपकार")
-        equals = TypstText("$=$")
+        left = TypstText("पर", scale=scale)
+        right = TypstText("उपकार", scale=scale)
+        plus = TypstText("उपकार",scale=scale)
+        whole = TypstText("परोपकार",scale=scale)
 
         # do animations
         self.forward()
 
         left.points.next_to(plus, LEFT)
         right.points.next_to(plus, RIGHT)
-        equals.points.next_to(right, RIGHT)
 
         whole.points.shift(DOWN)
 
@@ -49,3 +51,102 @@ class HelloJAnimExample(Timeline):
         self.play(MoveToTarget(whole))
 
         self.forward()
+
+class Shloka(Timeline):
+    def construct(self):
+        # define items
+        first = Devanagari("परोपकाराय फलन्ति वृक्षाः परोपकाराय वहन्ति नद्यः ।")
+        second = Devanagari("परोपकाराय दुहन्ति गावः परोपकारार्थमिदं शरीरम् ॥")
+
+        first.points.next_to(ORIGIN, UP)
+        second.points.next_to(ORIGIN, DOWN)
+
+        self.play(Write(first))
+        self.play(Write(second))
+
+        self.forward(4)
+
+        self.play(FadeOut(first), FadeOut(second))
+
+        self.forward()
+
+class Pada(Timeline):
+    def construct(self):
+        dur = 5
+        # define items
+        first = Devanagari("परोपकाराय फलन्ति वृक्षाः")
+        second = Devanagari("परोपकाराय वहन्ति नद्यः")
+        third = Devanagari("परोपकाराय दुहन्ति गावः")
+        fourth = Devanagari("परोपकारार्थमिदं शरीरम्")
+        d1 = Devanagari("।")
+        d2 = Devanagari("॥")
+
+
+        second.points.next_to(ORIGIN, UP)
+        first.points.next_to(second, UP)
+
+        third.points.next_to(ORIGIN, DOWN)
+        fourth.points.next_to(third, DOWN)
+
+        second.points.align_to(first, LEFT)
+        third.points.align_to(first, LEFT)
+        fourth.points.align_to(first, LEFT)
+
+        d1.points.next_to(second, RIGHT)
+        d2.points.next_to(fourth, RIGHT)
+
+        self.play(Succession(Write(first), Write(second), duration=dur), AnimGroup(FadeIn(d1), at=dur*0.9))
+        self.play(Succession(Write(third), Write(fourth), duration=dur), AnimGroup(FadeIn(d2), at=dur*0.9))
+
+        self.forward(3)
+
+        self.play(FadeOut(first), FadeOut(second), FadeOut(third), FadeOut(fourth), FadeOut(d1), FadeOut(d2))
+
+        self.forward()
+
+class Deconstruct(Timeline):
+    def construct(self):
+        word = Devanagari("परोपकाराय")
+        left = Devanagari('परोपकार')
+        right =Devanagari('आय')
+
+        word.points.next_to(ORIGIN, UP)
+
+        self.play(Write(word))
+
+        child = word.copy()
+        child.generate_target()
+        child.target.points.move_to(DOWN)
+        self.play(MoveToTarget(child))
+
+        plus = Devanagari("$+$")
+        plus.points.move_to(child)
+
+        left.points.next_to(child, LEFT)
+        right.points.next_to(child, RIGHT)
+
+        self.forward(1)
+
+        self.play(
+            AnimGroup(
+                FadeIn(plus),
+                TransformMatchingShapes(child, Group(left, right)),
+            ),
+            duration=1.0,
+        )
+
+        self.forward(3)
+
+class Word(Timeline):
+    def construct(self):
+        scale = 2.0
+        word = TypstText("परोपकाराय", scale=scale)
+        word.points.move_to(ORIGIN)
+        self.play(Write(word))
+
+        self.forward(3)
+
+        self.play(FadeOut(word))
+
+        self.forward()
+

@@ -67,8 +67,9 @@ class Node:
                 equation.add(devanagari[i])
                 if i < len(connectors):
                     equation.add(connectors[i])
-            # So they can be arranged
+
             equation.points.arrange()
+            equation.points.move_to(child.target)
 
             j.forward(1)
 

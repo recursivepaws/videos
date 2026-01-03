@@ -32,11 +32,28 @@ class Writing:
         self.iast = transliterate(itrans, sanscript.ITRANS, sanscript.IAST)
 
 
+class Components:
+    items: List[Node]
+    delimiter: LiteralString
+
+    def __init__(
+        self,
+        items: List[Node],
+        delimiter: LiteralString,
+    ):
+        self.items = items
+        self.delimiter = delimiter
+
+
 class Node:
     writing: Writing
-    components: Optional[List[Node]]
+    components: Optional[Components]
 
-    def __init__(self, phrase: LiteralString, components):
+    def __init__(
+        self,
+        phrase: LiteralString,
+        components: Optional[Components],
+    ):
         self.writing = Writing(phrase)
         self.components = components
 
@@ -55,11 +72,16 @@ class Node:
 
             # Create a group of the components
             devanagari = Group(
-                *[(lambda c: Jaini(c.writing.devanagari))(c) for c in self.components]
+                *[
+                    (lambda c: Jaini(c.writing.devanagari))(c)
+                    for c in self.components.items
+                ]
             )
 
             # Create a group of the joiners
-            connectors = Jaini("$+$") * (len(devanagari) - 1)
+            connectors = Jaini("$%s$" % self.components.delimiter) * (
+                len(devanagari) - 1
+            )
 
             # Create a group of the full equation
             equation = Group()
@@ -74,14 +96,22 @@ class Node:
             j.forward(1)
 
             j.play(
-                AnimGroup(
-                    FadeIn(connectors),
-                    TransformMatchingShapes(child, devanagari),
-                ),
-                duration=1.0,
+                TransformMatchingShapes(child, devanagari),
+            )
+            j.play(
+                FadeIn(connectors),
             )
 
             j.forward(3)
+
+            j.play(
+                AnimGroup(FadeOut(word), FadeOut(equation)),
+                duration=1.0,
+            )
+
+            for component in self.components.items:
+                if component.components is not None:
+                    component.deconstruct(j)
 
 
 class Sloka:
@@ -91,17 +121,52 @@ class Sloka:
         self.padas = padas
 
 
-def Jaini(text: LiteralString, scale: Optional[float] = 2.0):
+def Jaini(text: LiteralString, scale: Optional[float] = 1.0):
     return TypstText('#text(font: "Jaini")[%s]' % text, scale=scale)
 
 
 class SlokaTime(Timeline):
     def construct(self):
         node = Node(
-            "yo mAM pashyati sarvatra sarvaM cha mayi pashyati",
-            [
-                Node("yo mAM pashyati sarvatra", None),
-                Node("sarvaM cha mayi pashyati", None),
-            ],
+            "yo mAM pashyati sarvatra sarvaM cha mayi pashyati tasyAhaM na praNashyAmi sa ca me na praNashyati",
+            Components(
+                [
+                    Node(
+                        "yo mAM pashyati sarvatra sarvaM cha mayi pashyati",
+                        Components(
+                            [
+                                Node("yo mAM pashyati sarvatra", None),
+                                Node("sarvaM cha mayi pashyati", None),
+                            ],
+                            "+",
+                        ),
+                    ),
+                    Node(
+                        "tasyAhaM na praNashyAmi sa ca me na praNashyati",
+                        Components(
+                            [
+                                Node("tasyAhaM na praNashyAmi", None),
+                                Node("sa ca me na praNashyati", None),
+                            ],
+                            "+",
+                        ),
+                    ),
+                ],
+                "|",
+            ),
         )
+
+        node = Node(
+            "yo mAM pashyati sarvatra sarvaM cha mayi pashyati",
+            Components(
+                [
+                    (lambda s: Node(s, None))(s)
+                    for s in "yo mAm pashyati sarvatra sarvam cha mayi pashyati".split(
+                        " "
+                    )
+                ],
+                "+",
+            ),
+        )
+
         node.deconstruct(self)

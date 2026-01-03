@@ -22,6 +22,9 @@ from janim.imports import (
     TypstText,
     Write,
 )
+from numpy.char import join
+
+SCALE = 1.6
 
 
 class Writing:
@@ -64,13 +67,14 @@ class Node:
     def __init__(
         self,
         before: LiteralString,
-        children: Optional[Children],
-        after: Optional[LiteralString],
+        children: Optional[Children] = None,
+        after: Optional[LiteralString] = None,
     ):
         self.before = Writing(before)
         self.children = children
         if after is None:
             self.after = after
+            self.ag = None
         else:
             self.after = Writing(after)
             self.ag = self.after.render()
@@ -83,7 +87,13 @@ class Node:
     def morph(self):
         if self.bg is not None and self.ag is not None:
             self.bg.points.move_to(self.ag)
-            return TransformMatchingShapes(self.bg, self.ag)
+            return TransformMatchingShapes(self.bg, self.ag, duration=1.0)
+
+    def safe_ag(self):
+        if self.ag is None:
+            return self.bg
+        else:
+            return self.ag
 
     def deconstruct(self, j: Timeline):
         # Render the parent if required
@@ -95,8 +105,8 @@ class Node:
             clone.generate_target()
 
             # Move the word and its clone away from the center
-            self.bg.target.points.move_to(UP)
-            clone.target.points.move_to(DOWN)
+            self.bg.target.points.move_to(UP * SCALE / 2.0)
+            clone.target.points.move_to(DOWN * SCALE / 2.0)
 
             j.play(AnimGroup(MoveToTarget(self.bg), MoveToTarget(clone)))
 
@@ -106,12 +116,15 @@ class Node:
             )
 
             after_children = Group(
-                *[(lambda child: child.ag)(node) for node in self.children.nodes]
+                *[
+                    (lambda child: child.safe_ag())(node)
+                    for node in self.children.nodes
+                ],
             )
 
             # Create a group of the joiners
             connectors = Jaini("$%s$" % self.children.delimiter) * (
-                len(before_children) - 1
+                len(after_children) - 1
             )
 
             # Create a group of the full equation
@@ -138,11 +151,11 @@ class Node:
                     animations.append(node.morph())
 
             j.play(
-                TransformMatchingShapes(clone, before_children),
+                TransformMatchingShapes(clone, before_children, duration=1.0),
             )
 
             if len(animations) > 0:
-                j.play(AnimGroup(*animations, FadeIn(connectors)))
+                j.play(AnimGroup(*animations, FadeIn(connectors, duration=1.0)))
 
             j.forward(3)
 
@@ -156,7 +169,7 @@ class Node:
                 # Shift everything already renderd upwards
                 current = Group(self.bg, equation)
                 current.generate_target()
-                current.points.move_to(UP)
+                current.points.move_to(UP * SCALE)
                 j.play(
                     MoveToTarget(current),
                 )
@@ -169,30 +182,74 @@ class Node:
                 # Otherwise fade out
                 j.play(
                     AnimGroup(FadeOut(self.bg), FadeOut(equation)),
-                    duration=1.0,
                 )
 
 
 class Sloka:
-    padas: List[Node]
+    lines: List[Node]
 
-    def __init__(self, padas):
-        self.padas = padas
+    def __init__(self, lines):
+        self.lines = lines
+
+    # def render(self):
+    #     full_text = (la)
+    #     for i, line in enumerate(self.lines):
+    #         "%s |" % line.before
+
+    # node.bg.points.move_to(ORIGIN)
+    # self.play(Write(node.bg))
+    # node.deconstruct(self)
 
 
-def Jaini(text: LiteralString, scale: Optional[float] = 1.5):
+class Word:
+    before: LiteralString
+    after: Optional[LiteralString]
+
+    def __init__(self, before, after=None):
+        self.before = before
+        self.after = after
+
+    def safe_after(self):
+        if self.after is None:
+            return self.before
+        else:
+            return self.after
+
+
+def Jaini(text: LiteralString, scale: Optional[float] = SCALE):
     return TypstText('#text(font: "Jaini")[%s]' % text, scale=scale)
 
 
+# c = a == true then 5 else 4
+
+
+def external_sandhi_v2(words: List[Word]):
+    def aft(a, b):
+        if a == b:
+            return None
+        else:
+            return a
+
+    before = " ".join([(lambda w: w.before)(w) for w in words])
+    after = " ".join([(lambda w: w.safe_after())(w) for w in words])
+    return external_sandhi(before, after)
+
+
 def external_sandhi(before: LiteralString, after: LiteralString):
+    def aft(a, b):
+        if a == b:
+            return None
+        else:
+            return a
+
     return Node(
         before=before,
         children=Children(
             [
-                (lambda b, a: Node(b, None, a))(b, a)
+                (lambda b, a: Node(before=b, after=aft(a, b)))(b, a)
                 for (b, a) in list(zip(before.split(" "), after.split(" ")))
             ],
-            "+",
+            "-",
         ),
         after=None,
     )
@@ -255,10 +312,31 @@ class SlokaTime(Timeline):
         #     after=None,
         # )
 
+        # node = node
+
         node = external_sandhi(
             "yo mAM pashyati sarvatra sarvaM cha mayi pashyati",
-            "yo mAm pashyati sarvatratratratratratra sarvam cha mayi pashyati",
+            "yo mAm pashyati sarvatra sarvam cha mayi pashyati",
         )
+        node = external_sandhi(
+            "tasyAhaM na praNashyAmi sa ca me na praNashyati",
+            "tasyAham na praNashyAmi sa ca me na praNashyati",
+        )
+
+        words = [
+            Word("tasyAhaM", "tasyAham"),
+            Word("na"),
+            Word("praNashyAmi"),
+            Word("sa"),
+            Word("ca"),
+            Word("me"),
+            Word("na"),
+            Word("praNashyati"),
+        ]
+        node = external_sandhi_v2(words)
+
+        # node =
+
         node.bg.points.move_to(ORIGIN)
         self.play(Write(node.bg))
         node.deconstruct(self)

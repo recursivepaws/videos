@@ -1,6 +1,5 @@
 from __future__ import annotations
 from functools import reduce
-from operator import contains
 from typing import List, LiteralString, Optional
 
 # Import the necessary modules from indic_transliteration
@@ -8,19 +7,18 @@ from indic_transliteration import sanscript
 from indic_transliteration.sanscript import transliterate
 from janim.imports import (
     DOWN,
-    LEFT,
+    # LEFT,
     ORIGIN,
-    RIGHT,
+    # RIGHT,
     UP,
     AnimGroup,
     FadeIn,
     FadeOut,
     Group,
     MoveToTarget,
-    Succession,
+    # Succession,
     Timeline,
     TransformMatchingShapes,
-    Typst,
     TypstText,
     Write,
 )
@@ -37,7 +35,7 @@ class Writing:
     def render(self, direction=DOWN):
         devanagari = Jaini(self.devanagari)
         iast = Jaini(self.iast)
-        group = Group(devanagari, iast)
+        group = Group(devanagari)
         group.points.arrange(direction)
         return group
 
@@ -56,63 +54,95 @@ class Children:
 
 
 class Node:
-    writing: Writing
+    before: Writing
     children: Optional[Children]
+    after: Optional[Writing]
+
+    bg: Group[TypstText]
+    ag: Optional[Group[TypstText]]
 
     def __init__(
         self,
-        writing: LiteralString,
+        before: LiteralString,
         children: Optional[Children],
+        after: Optional[LiteralString],
     ):
-        self.writing = Writing(writing)
+        self.before = Writing(before)
         self.children = children
+        if after is None:
+            self.after = after
+        else:
+            self.after = Writing(after)
+            self.ag = self.after.render()
+
+        self.bg = self.before.render()
+
+    # def initialize(self, j: Timeline):
+    #     word = self.before.render()
+    #     self.group = word
+    def morph(self):
+        if self.bg is not None and self.ag is not None:
+            self.bg.points.move_to(self.ag)
+            return TransformMatchingShapes(self.bg, self.ag)
 
     def deconstruct(self, j: Timeline):
-        word = self.writing.render()
-        word.points.next_to(ORIGIN, UP)
-
-        j.play(Write(word))
-
-        # pretransformationchildren =
-        if contains(self.writing.devanagari, " "):
-            print("meow")
-
+        # Render the parent if required
         if self.children is not None:
             # Duplicate the phrase
-            clone = word.copy()
+            clone = self.bg.copy()
+
+            self.bg.generate_target()
             clone.generate_target()
+
+            # Move the word and its clone away from the center
+            self.bg.target.points.move_to(UP)
             clone.target.points.move_to(DOWN)
-            j.play(MoveToTarget(clone))
+
+            j.play(AnimGroup(MoveToTarget(self.bg), MoveToTarget(clone)))
 
             # Create a group of the components
-            children = Group(
-                *[
-                    (lambda child: child.writing.render())(c)
-                    for c in self.children.nodes
-                ]
+            before_children = Group(
+                *[(lambda child: child.bg)(node) for node in self.children.nodes]
+            )
+
+            after_children = Group(
+                *[(lambda child: child.ag)(node) for node in self.children.nodes]
             )
 
             # Create a group of the joiners
-            connectors = Jaini("$%s$" % self.children.delimiter) * (len(children) - 1)
+            connectors = Jaini("$%s$" % self.children.delimiter) * (
+                len(before_children) - 1
+            )
 
             # Create a group of the full equation
             equation = Group()
-            for i in range(len(children)):
-                equation.add(children[i])
+
+            for i in range(len(after_children)):
+                bg = before_children[i]
+                ag = after_children[i]
+                if ag is not None:
+                    equation.add(ag)
+                else:
+                    equation.add(bg)
+
                 if i < len(connectors):
                     equation.add(connectors[i])
 
             equation.points.arrange()
             equation.points.move_to(clone.target)
 
-            j.forward(1)
+            # Precreate the morph animations
+            animations = []
+            for node in self.children.nodes:
+                if node.ag is not None:
+                    animations.append(node.morph())
 
             j.play(
-                TransformMatchingShapes(clone, children),
+                TransformMatchingShapes(clone, before_children),
             )
-            j.play(
-                FadeIn(connectors),
-            )
+
+            if len(animations) > 0:
+                j.play(AnimGroup(*animations, FadeIn(connectors)))
 
             j.forward(3)
 
@@ -124,7 +154,7 @@ class Node:
 
             if children_exist:
                 # Shift everything already renderd upwards
-                current = Group(word, equation)
+                current = Group(self.bg, equation)
                 current.generate_target()
                 current.points.move_to(UP)
                 j.play(
@@ -138,7 +168,7 @@ class Node:
             else:
                 # Otherwise fade out
                 j.play(
-                    AnimGroup(FadeOut(word), FadeOut(equation)),
+                    AnimGroup(FadeOut(self.bg), FadeOut(equation)),
                     duration=1.0,
                 )
 
@@ -150,64 +180,85 @@ class Sloka:
         self.padas = padas
 
 
-def Jaini(text: LiteralString, scale: Optional[float] = 2.0):
+def Jaini(text: LiteralString, scale: Optional[float] = 1.5):
     return TypstText('#text(font: "Jaini")[%s]' % text, scale=scale)
+
+
+def external_sandhi(before: LiteralString, after: LiteralString):
+    return Node(
+        before=before,
+        children=Children(
+            [
+                (lambda b, a: Node(b, None, a))(b, a)
+                for (b, a) in list(zip(before.split(" "), after.split(" ")))
+            ],
+            "+",
+        ),
+        after=None,
+    )
 
 
 class SlokaTime(Timeline):
     def construct(self):
-        node = Node(
-            "yo mAM pashyati sarvatra sarvaM cha mayi pashyati tasyAhaM na praNashyAmi sa ca me na praNashyati",
-            Children(
-                [
-                    # Node(
-                    #     "yo mAM pashyati sarvatra sarvaM cha mayi pashyati",
-                    #     Children(
-                    #         [
-                    #             Node("yo mAM pashyati sarvatra", None),
-                    #             Node("sarvaM cha mayi pashyati", None),
-                    #         ],
-                    #         "+",
-                    #     ),
-                    # ),
-                    Node(
-                        "yo mAM pashyati sarvatra sarvaM cha mayi pashyati",
-                        Children(
-                            [
-                                (lambda s: Node(s, None))(s)
-                                for s in "yo mAm pashyati sarvatra sarvam cha mayi pashyati".split(
-                                    " "
-                                )
-                            ],
-                            "+",
-                        ),
-                    ),
-                    Node(
-                        "tasyAhaM na praNashyAmi sa ca me na praNashyati",
-                        Children(
-                            [
-                                Node("tasyAhaM na praNashyAmi", None),
-                                Node("sa ca me na praNashyati", None),
-                            ],
-                            "+",
-                        ),
-                    ),
-                ],
-                "|",
-            ),
-        )
+        # node = Node(
+        #     "yo mAM pashyati sarvatra sarvaM cha mayi pashyati tasyAhaM na praNashyAmi sa ca me na praNashyati",
+        #     Children(
+        #         [
+        #             # Node(
+        #             #     "yo mAM pashyati sarvatra sarvaM cha mayi pashyati",
+        #             #     Children(
+        #             #         [
+        #             #             Node("yo mAM pashyati sarvatra", None),
+        #             #             Node("sarvaM cha mayi pashyati", None),
+        #             #         ],
+        #             #         "+",
+        #             #     ),
+        #             # ),
+        #             Node(
+        #                 "yo mAM pashyati sarvatra sarvaM cha mayi pashyati",
+        #                 Children(
+        #                     [
+        #                         (lambda s: Node(s, None))(s)
+        #                         for s in "yo mAm pashyati sarvatra sarvam cha mayi pashyati".split(
+        #                             " "
+        #                         )
+        #                     ],
+        #                     "+",
+        #                 ),
+        #             ),
+        #             Node(
+        #                 "tasyAhaM na praNashyAmi sa ca me na praNashyati",
+        #                 Children(
+        #                     [
+        #                         Node("tasyAhaM na praNashyAmi", None),
+        #                         Node("sa ca me na praNashyati", None),
+        #                     ],
+        #                     "+",
+        #                 ),
+        #             ),
+        #         ],
+        #         "|",
+        #     ),
+        # )
 
-        node = Node(
+        # node = Node(
+        #     before="yo mAM pashyati sarvatra sarvaM cha mayi pashyati",
+        #     children=Children(
+        #         [
+        #             (lambda s: Node(s, None, None))(s)
+        #             for s in "yo mAm pashyati sarvatra sarvam cha mayi pashyati".split(
+        #                 " "
+        #             )
+        #         ],
+        #         "+",
+        #     ),
+        #     after=None,
+        # )
+
+        node = external_sandhi(
             "yo mAM pashyati sarvatra sarvaM cha mayi pashyati",
-            Children(
-                [
-                    (lambda s: Node(s, None))(s)
-                    for s in "yo mAm pashyati sarvatra sarvam cha mayi pashyati".split(
-                        " "
-                    )
-                ],
-                "+",
-            ),
+            "yo mAm pashyati sarvatratratratratratra sarvam cha mayi pashyati",
         )
-
+        node.bg.points.move_to(ORIGIN)
+        self.play(Write(node.bg))
         node.deconstruct(self)

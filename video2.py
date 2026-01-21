@@ -7,15 +7,22 @@ from indic_transliteration import sanscript
 from indic_transliteration.sanscript import transliterate
 from janim.imports import (
     DOWN,
+    GREEN,
     # LEFT,
     ORIGIN,
+    PURE_BLUE,
+    PURE_GREEN,
     # RIGHT,
     UP,
+    Aligned,
     AnimGroup,
+    Color,
+    Config,
     FadeIn,
     FadeOut,
     Group,
     MoveToTarget,
+    ShowSubitemsOneByOne,
     # Succession,
     Timeline,
     TransformMatchingShapes,
@@ -24,7 +31,7 @@ from janim.imports import (
 )
 from numpy.char import join
 
-SCALE = 1.6
+SCALE = 2.0
 
 
 class Writing:
@@ -217,7 +224,7 @@ class Word:
 
 
 def Jaini(text: LiteralString, scale: Optional[float] = SCALE):
-    return TypstText('#text(font: "Jaini")[%s]' % text, scale=scale)
+    return TypstText('#text(font: "Jaini", stroke: none)[%s]' % text, scale=scale)
 
 
 # c = a == true then 5 else 4
@@ -256,6 +263,8 @@ def external_sandhi(before: LiteralString, after: LiteralString):
 
 
 class SlokaTime(Timeline):
+    # CONFIG = Config(fps=60, background_color=Color(PURE_GREEN))
+
     def construct(self):
         # node = Node(
         #     "yo mAM pashyati sarvatra sarvaM cha mayi pashyati tasyAhaM na praNashyAmi sa ca me na praNashyati",
@@ -314,29 +323,57 @@ class SlokaTime(Timeline):
 
         # node = node
 
-        node = external_sandhi(
-            "yo mAM pashyati sarvatra sarvaM cha mayi pashyati",
+        node1 = external_sandhi(
+            "yo mAM pashyati sarvatra sarvaM cha mayi pashyati ।",
             "yo mAm pashyati sarvatra sarvam cha mayi pashyati",
         )
-        node = external_sandhi(
-            "tasyAhaM na praNashyAmi sa ca me na praNashyati",
+        node2 = external_sandhi(
+            "tasyAhaM na praNashyAmi sa ca me na praNashyati ।।",
             "tasyAham na praNashyAmi sa ca me na praNashyati",
         )
 
-        words = [
-            Word("tasyAhaM", "tasyAham"),
-            Word("na"),
-            Word("praNashyAmi"),
-            Word("sa"),
-            Word("ca"),
-            Word("me"),
-            Word("na"),
-            Word("praNashyati"),
-        ]
-        node = external_sandhi_v2(words)
+        # words = [
+        #     Word("tasyAhaM", "tasyAham"),
+        #     Word("na"),
+        #     Word("praNashyAmi"),
+        #     Word("sa"),
+        #     Word("ca"),
+        #     Word("me"),
+        #     Word("na"),
+        #     Word("praNashyati"),
+        # ]
+        # node = external_sandhi_v2(words)
 
         # node =
 
-        node.bg.points.move_to(ORIGIN)
-        self.play(Write(node.bg))
-        node.deconstruct(self)
+        node1.bg.points.move_to(ORIGIN + UP / 2.0)
+        print("styles: " + str(node1.bg.get_available_styles()))
+        # node1.bg[0].scale_descendants_stroke_radius(2)
+        gold1 = Group(*node1.bg.copy(), color=PURE_GREEN)
+        # gold1[0].scale_descendants_stroke_radius(2.0)
+
+        self.play(
+            Aligned(
+                # Write(node1.bg, at=1.0, duration=6.0),
+                Write(gold1, duration=6.0),
+            )
+        )
+
+        self.play()
+
+        node2.bg.points.move_to(ORIGIN + DOWN / 2.0)
+        gold2 = Group(*node2.bg.copy(), color=PURE_GREEN)
+        # gold2[0].scale_descendants_stroke_radius(2.0)
+
+        self.play(
+            Aligned(
+                # Write(node2.bg, at=1.0, duration=6.0),
+                Write(gold2, duration=6.0),
+            )
+        )
+        # self.play
+
+        # self.play(Write(node1.bg, duration=6.0))
+        # # self.play(Write(node1.bg))
+        # self.play(Write(node2.bg, duration=6.0))
+        # node.deconstruct(self)

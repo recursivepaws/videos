@@ -20,7 +20,12 @@
         devShells.render = devenv.lib.mkShell {
           inherit inputs pkgs;
           modules = [
-            ({ pkgs, config, ... }: {
+            ({ pkgs, config, lib, ... }: {
+              devenv.root =
+                let
+                  devenvRootFileContent = builtins.readFile ./devenv.root;
+                in
+                  lib.mkIf (devenvRootFileContent != "") devenvRootFileContent;
               packages = [ pkgs.gtk4 pkgs.just pkgs.manim ];
             })
           ];
@@ -28,7 +33,12 @@
         devShells.default = devenv.lib.mkShell {
           inherit inputs pkgs;
           modules = [
-            ({ pkgs, config, ... }: {
+            ({ pkgs, config, lib, ... }: {
+              devenv.root =
+                let
+                  devenvRootFileContent = builtins.readFile ./devenv.root;
+                in
+                  lib.mkIf (devenvRootFileContent != "") devenvRootFileContent;
               packages = with pkgs; [
                 just
                 ruff
@@ -90,4 +100,5 @@
           ];
         };
       });
+
 }

@@ -1,5 +1,7 @@
 from __future__ import annotations
 from functools import reduce
+from operator import add
+from tkinter import BOTTOM
 from typing import List, LiteralString, Optional
 from enum import Enum
 
@@ -10,40 +12,48 @@ from janim.imports import (
     BLUE,
     DOWN,
     GREEN,
+    LEFT,
     ORANGE,
     # LEFT,
     ORIGIN,
+    PINK,
     PURE_BLUE,
     PURE_GREEN,
     RED,
+    RIGHT,
     # RIGHT,
     UP,
     WHITE,
+    YELLOW,
     Aligned,
     AnimGroup,
     Color,
     Config,
+    Dot,
     FadeIn,
     FadeOut,
     Group,
     Item,
     MoveToTarget,
     ShowSubitemsOneByOne,
+    Succession,
     # Succession,
     Timeline,
     TransformMatchingShapes,
+    Triangle,
     TypstText,
     Wait,
     Write,
 )
 from numpy.char import join
 
-SCALE = 2.0
+SCALE = 1.5
 
 
 class Language(Enum):
     ENGLISH = 1
     SANSKRIT = 2
+    TRANSLIT = 3
 
 
 class Writing:
@@ -68,14 +78,15 @@ class Writing:
         group = None
         if language == Language.ENGLISH:
             group = Group(Junicode(self.text, self.color))
-        else:
-            devanagari = transliterate(
-                self.text, sanscript.ITRANS, sanscript.DEVANAGARI
-            )
-            group = Group(Jaini(devanagari, self.color))
+        if language == Language.TRANSLIT:
+            iast = transliterate(self.text, sanscript.ITRANS, sanscript.IAST)
+            group = Group(Junicode(iast, self.color))
+        if language == language.SANSKRIT:
+            iast = transliterate(self.text, sanscript.ITRANS, sanscript.DEVANAGARI)
+            group = Group(Jaini(iast, self.color))
 
         if group is not None:
-            group.points.arrange(direction)
+            # group.points.arrange(direction)
             return group
         else:
             return Group[TypstText]()
@@ -124,7 +135,8 @@ class Node:
     #     self.group = word
     def morph(self):
         if self.bg is not None and self.ag is not None:
-            self.bg.points.move_to(self.ag)
+            # self.bg.points.move_to(self.ag)
+            # self.ag.points.align_to(self.bg, DOWN)
             return TransformMatchingShapes(self.bg, self.ag, duration=1.0)
 
     def safe_ag(self):
@@ -235,16 +247,27 @@ class Node:
         if self.children is not None:
             self.bg.generate_target()
             # Create a group of the components
-            before_children = Group(
-                *[(lambda child: child.bg)(node) for node in self.children.nodes]
-            )
+            # before_children = [
+            #     (lambda child: child.bg)(node) for node in self.children.nodes
+            # ]
+            # for b of befo
+            before_children = Group()
+            after_children = Group()
+            for node in self.children.nodes:
+                for item in node.bg:
+                    before_children.add(item)
+                for item in node.safe_ag():
+                    after_children.add(item)
 
-            after_children = Group(
-                *[
-                    (lambda child: child.safe_ag())(node)
-                    for node in self.children.nodes
-                ],
-            )
+            # before_children = reduce(add, before_children, [])
+
+            # after_children = Group()
+            #     *[
+            #         (lambda child: child.safe_ag())(node)
+            #         for node in self.children.nodes
+            #     ],
+            # )
+            # for node in self.children.
 
             # Create a group of the full equation
             equation = Group()
@@ -252,12 +275,26 @@ class Node:
             for i in range(len(after_children)):
                 bg = before_children[i]
                 ag = after_children[i]
+
+                # for t in ag:
+                #     t.
+                # ag.points.move_to_by_indicator(bg, ag)
+
                 if ag is not None:
+                    # ag.points.align_to(self.bg, DOWN)
+                    # ag.points.move_to(self.bg)
                     equation.add(ag)
                 else:
+                    # bg.points.align_to(self.bg, DOWN)
+                    # bg.points.move_to(self.bg)
                     equation.add(bg)
 
-            equation.points.arrange()
+            # equation.points.match_pattern()
+            equation.points.arrange(direction=RIGHT, center=True, aligned_edge=DOWN)
+            # equation.points.arrange(aligned_edge=DOWN)
+            # equation.points.arrange_in_grid(
+            #     n_rows=1, aligned_edge=DOWN, h_buff=1, by_center_point=True
+            # )
             equation.points.move_to(self.bg.target)
 
             # Precreate the morph animations
@@ -266,9 +303,15 @@ class Node:
                 if node.ag is not None:
                     animations.append(node.morph())
 
-            j.play(
-                TransformMatchingShapes(self.bg, before_children, duration=1.0),
-            )
+            # animation = Aligned(*animations)
+            # if len(animations) > 0:
+            #     animation = Aligned(*animations)
+            # else:
+            #     animation = None)
+            # j.play(
+            # )
+            animation = TransformMatchingShapes(self.bg, before_children, duration=1.0)
+            # animation = Write(before_children)
 
             # Determine if any of the nodes in the components also have children
             children_exist = reduce(
@@ -276,11 +319,22 @@ class Node:
                 [(lambda c: c.children is not None)(n) for n in self.children.nodes],
             )
 
+            child_animations = []
             if children_exist:
                 # Recurse
                 for component in self.children.nodes:
                     if component.children is not None:
-                        component.deconstruct_in_place(j)
+                        child_animations.append(component.deconstruct_in_place(j))
+
+            if len(child_animations) > 0:
+                return Succession(
+                    AnimGroup(animation, Aligned(*child_animations), offset=1.0)
+                )
+            else:
+                return animation
+        else:
+            # Empty anim
+            return AnimGroup()
             # else:
             #     # Otherwise fade out
             #     j.play(
@@ -533,41 +587,48 @@ class SlokaTime(Timeline):
 
         # He who sees me everywhere and sees all things in me- to him I am not lost, nor is he lost to me
 
+        # verbs: pink
+        # pronouns:
+
         # Node()
         # node1 = external_sandhi_v2(words)
         sa = [
-            Word(Writing("tasyAhaM"), [Writing("tasya", RED), Writing("aham", BLUE)]),
-            Word(Writing("na"), [Writing("na")]),
-            Word(Writing("praNashyAmi"), [Writing("praNashyAmi")]),
-            Word(Writing("sa"), [Writing("sa")]),
-            Word(Writing("ca"), [Writing("ca")]),
-            Word(Writing("me"), [Writing("me", ORANGE)]),
-            Word(Writing("na"), [Writing("na")]),
-            Word(Writing("praNashyati"), [Writing("praNashyati")]),
+            Word(Writing("tasyAhaM"), [Writing("tasya", GREEN), Writing("aham", BLUE)]),
+            Word(Writing("na"), [Writing("na", RED)]),
+            Word(Writing("praNashyAmi"), [Writing("praNashyAmi", PINK)]),
+            Word(Writing("sa"), [Writing("sa", YELLOW)]),
+            Word(Writing("ca"), [Writing("ca", ORANGE)]),
+            Word(Writing("me"), [Writing("me", GREEN)]),
+            Word(Writing("na"), [Writing("na", RED)]),
+            Word(Writing("praNashyati"), [Writing("praNashyati", PINK)]),
         ]
+
         en = [
             Word(
                 Writing("to him, I"),
-                [Writing("to him", RED), Writing(","), Writing("I", BLUE)],
+                [Writing("to him", GREEN), Writing(","), Writing("I", BLUE)],
             ),
-            Word(Writing("am"), [Writing("not")]),
-            Word(Writing("not"), [Writing("not")]),
-            Word(Writing("lost"), [Writing("lost")]),
+            Word(Writing("am"), [Writing("am")]),
+            Word(Writing("not"), [Writing("not", RED)]),
+            Word(Writing("lost"), [Writing("lost", PINK)]),
             Word(Writing(","), [Writing(",")]),
-            Word(Writing("and"), [Writing("and")]),
-            Word(Writing("he"), [Writing("he")]),
+            Word(Writing("and"), [Writing("and", ORANGE)]),
+            Word(Writing("he"), [Writing("he", YELLOW)]),
             Word(Writing("is"), [Writing("is")]),
-            Word(Writing("not"), [Writing("not")]),
-            Word(Writing("lost"), [Writing("lost")]),
-            Word(Writing("to me"), [Writing("to me", ORANGE)]),
+            Word(Writing("not"), [Writing("not", RED)]),
+            Word(Writing("lost"), [Writing("lost", PINK)]),
+            Word(Writing("to me"), [Writing("to me", GREEN)]),
         ]
+
         node1 = color_revealerV2(Language.SANSKRIT, sa)
-        node2 = color_revealerV2(Language.ENGLISH, en)
+        node2 = color_revealerV2(Language.TRANSLIT, sa)
+        node3 = color_revealerV2(Language.ENGLISH, en)
 
         # node =
 
-        node1.bg.points.move_to(ORIGIN + UP / 2.0)
-        node2.bg.points.move_to(ORIGIN + DOWN / 2.0)
+        node1.bg.points.move_to(ORIGIN + UP / SCALE * 1.5)
+        node2.bg.points.move_to(ORIGIN)
+        node3.bg.points.move_to(ORIGIN + DOWN / SCALE * 1.5)
         print("styles: " + str(node1.bg.get_available_styles()))
         # node1.bg[0].scale_descendants_stroke_radius(2)
         # gold1 = Group(*node1.bg.copy())
@@ -577,13 +638,17 @@ class SlokaTime(Timeline):
         self.play(
             Aligned(
                 # Write(node1.bg, at=1.0, duration=6.0),
-                Write(node1.bg, duration=6.0),
-                Write(node2.bg, duration=6.0),
+                Write(node1.bg, duration=3.0),
+                Write(node2.bg, duration=3.0),
+                Write(node3.bg, duration=3.0),
             )
         )
 
-        node1.deconstruct_in_place(self)
-        node2.deconstruct_in_place(self)
+        n1a = node1.deconstruct_in_place(self)
+        n2a = node2.deconstruct_in_place(self)
+        n3a = node3.deconstruct_in_place(self)
+
+        self.play(Aligned(AnimGroup(n1a, n2a, n3a)))
 
         """ node2.bg.points.move_to(ORIGIN + DOWN / 2.0)
         # gold2 = Group(*node2.bg.copy(), color=PURE_GREEN)

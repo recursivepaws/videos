@@ -1,6 +1,7 @@
 from __future__ import annotations
 from functools import reduce
 from typing import List, LiteralString, Optional
+from enum import Enum
 
 # Import the necessary modules from indic_transliteration
 from indic_transliteration import sanscript
@@ -9,10 +10,12 @@ from janim.imports import (
     BLUE,
     DOWN,
     GREEN,
+    ORANGE,
     # LEFT,
     ORIGIN,
     PURE_BLUE,
     PURE_GREEN,
+    RED,
     # RIGHT,
     UP,
     WHITE,
@@ -23,6 +26,7 @@ from janim.imports import (
     FadeIn,
     FadeOut,
     Group,
+    Item,
     MoveToTarget,
     ShowSubitemsOneByOne,
     # Succession,
@@ -37,38 +41,57 @@ from numpy.char import join
 SCALE = 2.0
 
 
+class Language(Enum):
+    ENGLISH = 1
+    SANSKRIT = 2
+
+
 class Writing:
-    devanagari: LiteralString
-    iast: LiteralString
+    text: str
+    # english: Optional[LiteralString]
+    # devanagari: Optional[LiteralString]
+    # iast: Optional[LiteralString]
     color: str
 
-    def __init__(self, itrans: LiteralString, color: str = WHITE):
-        self.devanagari = transliterate(itrans, sanscript.ITRANS, sanscript.DEVANAGARI)
-        self.iast = transliterate(itrans, sanscript.ITRANS, sanscript.IAST)
+    def __init__(self, text: str, color: str = WHITE):
+        self.text = text
         self.color = color
+        # if language == Language.ENGLISH:
+        #     self.english = text
+        # else:
+        #     self.devanagari = transliterate(
+        #         text, sanscript.ITRANS, sanscript.DEVANAGARI
+        #     )
+        # self.iast = transliterate(text, sanscript.ITRANS, sanscript.IAST)
 
-    def render(self, direction=DOWN):
-        devanagari = Jaini(self.devanagari, self.color)
-        iast = Jaini(self.iast, self.color)
-        group = Group(devanagari)
-        group.points.arrange(direction)
-        return group
+    def render(self, language: Language, direction=DOWN):
+        group = None
+        if language == Language.ENGLISH:
+            group = Group(Junicode(self.text, self.color))
+        else:
+            devanagari = transliterate(
+                self.text, sanscript.ITRANS, sanscript.DEVANAGARI
+            )
+            group = Group(Jaini(devanagari, self.color))
+
+        if group is not None:
+            group.points.arrange(direction)
+            return group
+        else:
+            return Group[TypstText]()
 
 
 class Children:
     nodes: List[Node]
     delimiter: LiteralString
 
-    def __init__(
-        self,
-        nodes: List[Node],
-        delimiter: LiteralString,
-    ):
+    def __init__(self, nodes: List[Node], delimiter: LiteralString = ""):
         self.nodes = nodes
         self.delimiter = delimiter
 
 
 class Node:
+    language: Language
     before: Writing
     children: Optional[Children]
     after: Optional[Writing]
@@ -78,10 +101,12 @@ class Node:
 
     def __init__(
         self,
+        language: Language,
         before: Writing,
         children: Optional[Children] = None,
-        after: Optional[LiteralString] = None,
+        after: Optional[Writing] = None,
     ):
+        self.language = language
         self.before = before
         self.children = children
 
@@ -89,10 +114,10 @@ class Node:
             self.after = after
             self.ag = None
         else:
-            self.after = Writing(after)
-            self.ag = self.after.render()
+            self.after = after
+            self.ag = self.after.render(self.language)
 
-        self.bg = self.before.render()
+        self.bg = self.before.render(self.language)
 
     # def initialize(self, j: Timeline):
     #     word = self.before.render()
@@ -107,6 +132,14 @@ class Node:
             return self.bg
         else:
             return self.ag
+
+    def children_as_node(self):
+        new = []
+        if self.children is not None:
+            for child in self.children.nodes:
+                new.append(Node(self.language, child.before, child.children))
+
+        # return (language, )
 
     def deconstruct(self, j: Timeline):
         # Render the parent if required
@@ -197,6 +230,63 @@ class Node:
                     AnimGroup(FadeOut(self.bg), FadeOut(equation)),
                 )
 
+    def deconstruct_in_place(self, j: Timeline):
+        # Render the parent if required
+        if self.children is not None:
+            self.bg.generate_target()
+            # Create a group of the components
+            before_children = Group(
+                *[(lambda child: child.bg)(node) for node in self.children.nodes]
+            )
+
+            after_children = Group(
+                *[
+                    (lambda child: child.safe_ag())(node)
+                    for node in self.children.nodes
+                ],
+            )
+
+            # Create a group of the full equation
+            equation = Group()
+
+            for i in range(len(after_children)):
+                bg = before_children[i]
+                ag = after_children[i]
+                if ag is not None:
+                    equation.add(ag)
+                else:
+                    equation.add(bg)
+
+            equation.points.arrange()
+            equation.points.move_to(self.bg.target)
+
+            # Precreate the morph animations
+            animations = []
+            for node in self.children.nodes:
+                if node.ag is not None:
+                    animations.append(node.morph())
+
+            j.play(
+                TransformMatchingShapes(self.bg, before_children, duration=1.0),
+            )
+
+            # Determine if any of the nodes in the components also have children
+            children_exist = reduce(
+                lambda x, y: x or y,
+                [(lambda c: c.children is not None)(n) for n in self.children.nodes],
+            )
+
+            if children_exist:
+                # Recurse
+                for component in self.children.nodes:
+                    if component.children is not None:
+                        component.deconstruct_in_place(j)
+            # else:
+            #     # Otherwise fade out
+            #     j.play(
+            #         AnimGroup(FadeOut(self.bg), FadeOut(equation)),
+            #     )
+
 
 class Sloka:
     lines: List[Node]
@@ -215,6 +305,21 @@ class Sloka:
 
 
 class Word:
+    before: Writing
+    children: List[Writing]
+
+    def __init__(self, before: Writing, children: List[Writing] = []):
+        self.before = before
+        self.children = children
+
+    # def safe_after(self):
+    #     if self.after is None:
+    #         return self.before
+    #     else:
+    #         return self.after
+
+
+class WordOld:
     before: LiteralString
     after: Optional[LiteralString]
     color: str
@@ -231,7 +336,14 @@ class Word:
             return self.after
 
 
-def Jaini(text: LiteralString, color: str = WHITE, scale: Optional[float] = SCALE):
+def Junicode(text: str, color: str = WHITE, scale: Optional[float] = SCALE):
+    return TypstText(
+        f'#text(font: "Junicode", stroke: none, fill: rgb("{color}"))[{text}]',
+        scale=scale,
+    )
+
+
+def Jaini(text: str, color: str = WHITE, scale: Optional[float] = SCALE):
     return TypstText(
         f'#text(font: "Jaini", stroke: none, fill: rgb("{color}"))[{text}]', scale=scale
     )
@@ -246,25 +358,44 @@ def aft(a, b):
         return a
 
 
-def color_revealer(words: List[Word]):
+def color_revealer(language: Language, words: List[WordOld]):
     before = " ".join([(lambda w: w.before)(w) for w in words])
     colored_children = [
-        (lambda w: Node(before=Writing(w.before, w.color)))(w) for w in words
+        (lambda w: Node(language, before=Writing(w.before, w.color)))(w) for w in words
     ]
 
-    return Node(before=Writing(before), children=Children(colored_children, "-"))
-
-    after = " ".join([(lambda w: w.before)(w) for w in words])
-    return external_sandhi(before, after)
+    return Node(language, before=Writing(before), children=Children(colored_children))
 
 
-def external_sandhi_v2(words: List[Word]):
+def color_revealerV2(language: Language, words: List[Word]):
+    def word_to_node(word: Word):
+        if len(word.children) > 0:
+            children = Children(
+                [
+                    (lambda c: word_to_node(Word(Writing(c.text, c.color))))(c)
+                    for c in word.children
+                ]
+            )
+            return Node(language, word.before, children)
+        else:
+            return Node(language, word.before)
+
+    before = str(" ").join([(lambda w: w.before.text)(w) for w in words])
+
+    return Node(
+        language,
+        Writing(before),
+        Children([(lambda w: word_to_node(w))(w) for w in words]),
+    )
+
+
+""" def external_sandhi_v2(words: List[Word]):
     before = " ".join([(lambda w: w.before)(w) for w in words])
     after = " ".join([(lambda w: w.safe_after())(w) for w in words])
-    return external_sandhi(before, after)
+    return external_sandhi(before, after) """
 
 
-def external_sandhi(before: LiteralString, after: LiteralString):
+""" def external_sandhi(before: LiteralString, after: LiteralString):
     def aft(a, b):
         if a == b:
             return None
@@ -281,7 +412,7 @@ def external_sandhi(before: LiteralString, after: LiteralString):
             "-",
         ),
         after=None,
-    )
+    ) """
 
 
 class SlokaTime(Timeline):
@@ -354,23 +485,89 @@ class SlokaTime(Timeline):
         #     "tasyAham na praNashyAmi sa ca me na praNashyati",
         # )
 
-        words = [
-            Word("tasyAhaM", "tasyAham"),
-            Word("na", color=BLUE),
-            Word("praNashyAmi"),
-            Word("sa"),
-            Word("ca"),
-            Word("me"),
-            Word("na"),
-            Word("praNashyati"),
+        sloka = [
+            [
+                WordOld("yo"),
+                WordOld("mAM", "mAm"),
+                WordOld("pashyati"),
+                WordOld("sarvatra"),
+                WordOld("sarvaM", "sarvam"),
+                WordOld("cha"),
+                WordOld("mayi"),
+                WordOld("pashyati"),
+            ],
+            [
+                WordOld("tasyAhaM", "tasya-aham"),
+                WordOld("na", color=BLUE),
+                WordOld("praNashyAmi"),
+                WordOld("sa"),
+                WordOld("ca"),
+                WordOld("me"),
+                WordOld("na"),
+                WordOld("praNashyati"),
+            ],
         ]
+
+        """ sloka = [
+            [
+                Word("He who"),
+                Word("sees"),
+                Word("me"),
+                Word("everywhere"),
+                Word("and"),
+                Word("sees"),
+                Word("all things"),
+                Word("in me;"),
+            ],
+            [
+                Word("to him"),
+                Word("I am", color=BLUE),
+                Word("not"),
+                Word("lost"),
+                Word("ca"),
+                Word("me"),
+                Word("na"),
+                Word("praNashyati"),
+            ],
+        ] """
+
+        # He who sees me everywhere and sees all things in me- to him I am not lost, nor is he lost to me
+
         # Node()
         # node1 = external_sandhi_v2(words)
-        node1 = color_revealer(words)
+        sa = [
+            Word(Writing("tasyAhaM"), [Writing("tasya", RED), Writing("aham", BLUE)]),
+            Word(Writing("na"), [Writing("na")]),
+            Word(Writing("praNashyAmi"), [Writing("praNashyAmi")]),
+            Word(Writing("sa"), [Writing("sa")]),
+            Word(Writing("ca"), [Writing("ca")]),
+            Word(Writing("me"), [Writing("me", ORANGE)]),
+            Word(Writing("na"), [Writing("na")]),
+            Word(Writing("praNashyati"), [Writing("praNashyati")]),
+        ]
+        en = [
+            Word(
+                Writing("to him, I"),
+                [Writing("to him", RED), Writing(","), Writing("I", BLUE)],
+            ),
+            Word(Writing("am"), [Writing("not")]),
+            Word(Writing("not"), [Writing("not")]),
+            Word(Writing("lost"), [Writing("lost")]),
+            Word(Writing(","), [Writing(",")]),
+            Word(Writing("and"), [Writing("and")]),
+            Word(Writing("he"), [Writing("he")]),
+            Word(Writing("is"), [Writing("is")]),
+            Word(Writing("not"), [Writing("not")]),
+            Word(Writing("lost"), [Writing("lost")]),
+            Word(Writing("to me"), [Writing("to me", ORANGE)]),
+        ]
+        node1 = color_revealerV2(Language.SANSKRIT, sa)
+        node2 = color_revealerV2(Language.ENGLISH, en)
 
         # node =
 
         node1.bg.points.move_to(ORIGIN + UP / 2.0)
+        node2.bg.points.move_to(ORIGIN + DOWN / 2.0)
         print("styles: " + str(node1.bg.get_available_styles()))
         # node1.bg[0].scale_descendants_stroke_radius(2)
         # gold1 = Group(*node1.bg.copy())
@@ -381,12 +578,12 @@ class SlokaTime(Timeline):
             Aligned(
                 # Write(node1.bg, at=1.0, duration=6.0),
                 Write(node1.bg, duration=6.0),
+                Write(node2.bg, duration=6.0),
             )
         )
 
-        self.play()
-
-        node1.deconstruct(self)
+        node1.deconstruct_in_place(self)
+        node2.deconstruct_in_place(self)
 
         """ node2.bg.points.move_to(ORIGIN + DOWN / 2.0)
         # gold2 = Group(*node2.bg.copy(), color=PURE_GREEN)

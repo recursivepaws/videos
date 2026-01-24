@@ -27,6 +27,7 @@ from janim.imports import (
     Timeline,
     TransformMatchingShapes,
     TypstText,
+    Wait,
     Write,
 )
 from numpy.char import join
@@ -371,7 +372,8 @@ class SlokaTime(Timeline):
                 Write(gold2, duration=6.0),
             )
         )
-        # self.play
+
+        self.play(Wait(duration=10.0))
 
         # self.play(Write(node1.bg, duration=6.0))
         # # self.play(Write(node1.bg))

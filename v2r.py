@@ -19,6 +19,7 @@ from janim.imports import (
     WHITE,
     YELLOW,
     Aligned,
+    AnimGroup,
     Config,
     FadeOut,
     Group,
@@ -45,6 +46,7 @@ class LangColor(StrEnum):
     VERB = PINK
     YOU = GREEN
     PARTICLES = ORANGE
+    NEGATION = RED
     OBJECTS = YELLOW
 
 
@@ -131,14 +133,18 @@ class Node:
             states[i].points.move_to(position)
 
         animations = []
-        animations.append(Write(states[0], duration=3.0))
+        animations.append(Write(states[0], duration=1.0))
         for i in range(len(states) - 1):
             animations.append(
                 TransformMatchingDiff(states[i], states[i + 1], duration=1.0)
             )
-            animations.append(Wait(1.0))
+            # animations.append(Wait(1.0))
 
-        return Succession(*animations, Wait(1.0), FadeOut(states[len(states) - 1]))
+        return Succession(
+            *animations,
+            Wait(1.4),
+            FadeOut(states[len(states) - 1], duration=0.5),
+        )
 
         # current = states.pop(0)
         #
@@ -252,7 +258,7 @@ class SlokaTime(Timeline):
                                     Node("aham", LangColor.GOD),
                                 ],
                             ),
-                            Node("na", children=[Node("na", LangColor.PARTICLES)]),
+                            Node("na", children=[Node("na", LangColor.NEGATION)]),
                             Node(
                                 "praNashyAmi",
                                 children=[Node("praNashyAmi", LangColor.VERB)],
@@ -265,7 +271,7 @@ class SlokaTime(Timeline):
                             Node("sa", children=[Node("sa", LangColor.YOU)]),
                             Node("ca", children=[Node("ca", LangColor.PARTICLES)]),
                             Node("me", children=[Node("me", LangColor.GOD)]),
-                            Node("na", children=[Node("na", LangColor.PARTICLES)]),
+                            Node("na", children=[Node("na", LangColor.NEGATION)]),
                             Node(
                                 "praNashyati",
                                 children=[Node("praNashyati", LangColor.VERB)],
@@ -306,7 +312,7 @@ class SlokaTime(Timeline):
                 ],
                 [
                     Node(
-                        "to him, I am not lost,",
+                        "to him, I am not lost",
                         children=[
                             Node(
                                 "to him, I",
@@ -317,7 +323,7 @@ class SlokaTime(Timeline):
                                 ],
                             ),
                             Node("am", children=[Node("am")]),
-                            Node("not", children=[Node("not", LangColor.PARTICLES)]),
+                            Node("not", children=[Node("not", LangColor.NEGATION)]),
                             Node("lost", children=[Node("lost", LangColor.VERB)]),
                         ],
                     ),
@@ -327,7 +333,7 @@ class SlokaTime(Timeline):
                             Node("and", children=[Node("and", LangColor.PARTICLES)]),
                             Node("he", children=[Node("he", LangColor.YOU)]),
                             Node("is", children=[Node("is")]),
-                            Node("not", children=[Node("not", LangColor.PARTICLES)]),
+                            Node("not", children=[Node("not", LangColor.NEGATION)]),
                             Node("lost", children=[Node("lost", LangColor.VERB)]),
                             Node("to me", children=[Node("to me", LangColor.GOD)]),
                         ],

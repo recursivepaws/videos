@@ -43,6 +43,7 @@ from janim.imports import (
     TransformMatchingShapes,
     Triangle,
     TypstText,
+    Vect,
     Wait,
     Write,
     TransformMatchingDiff,
@@ -137,18 +138,32 @@ class Node:
 
         return strings + roots
 
-    def decompose(self, j: Timeline, language: Language):
+    def decompose(self, language: Language, position: Vect):
         states = [
             (lambda s: TypstText(s, scale=SCALE))(s) for s in self.strings(language)
         ]
+        for i in range(len(states)):
+            states[i].points.move_to(position)
 
-        current = states.pop(0)
+        animations = []
+        for i in range(len(states) - 1):
+            if i == 0:
+                animations.append(Write(states[i], duration=6.0))
 
-        j.play(Write(current, duration=1.0))
+            animations.append(
+                TransformMatchingDiff(states[i], states[i + 1], duration=1.0)
+            )
+            animations.append(Wait(1.0))
 
-        for state in states:
-            j.play(TransformMatchingDiff(current, state, duration=1.0))
-            current = state
+        return Succession(*animations)
+
+        # current = states.pop(0)
+        #
+        # j.play(Write(current, duration=1.0))
+        #
+        # for state in states:
+        #     j.play(TransformMatchingDiff(current, state, duration=1.0))
+        #     current = state
 
 
 class Sloka:
@@ -255,7 +270,7 @@ class SlokaTime(Timeline):
         )
 
         en = Node(
-            "to him, I am not liost, and he is not lost to me",
+            "to him, I am not lost, and he is not lost to me",
             children=[
                 Node(
                     "to him, I",
@@ -288,9 +303,17 @@ class SlokaTime(Timeline):
         )
 
         # print(*text.strings(Language.SANSKRIT), sep="\n\n")
-        print(*text.typsts(Language.SANSKRIT), sep="\n\n")
+        # print(*text.typsts(Language.SANSKRIT), sep="\n\n")
 
-        sa.decompose(self, Language.SANSKRIT)
+        self.play(
+            Aligned(
+                sa.decompose(Language.SANSKRIT, ORIGIN + UP / SCALE * 1.5),
+                sa.decompose(Language.TRANSLIT, ORIGIN),
+                en.decompose(Language.ENGLISH, ORIGIN + DOWN / SCALE * 1.5),
+            )
+        )
+
+        # .decompose(self, Language.SANSKRIT)
 
         # node1 = color_revealerV2(Language.SANSKRIT, sa)
         # node2 = color_revealerV2(Language.TRANSLIT, sa)

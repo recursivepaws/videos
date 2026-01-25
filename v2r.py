@@ -19,7 +19,9 @@ from janim.imports import (
     WHITE,
     YELLOW,
     Aligned,
+    Config,
     FadeOut,
+    Group,
     Succession,
     Timeline,
     TransformMatchingDiff,
@@ -40,9 +42,9 @@ class Language(Enum):
 
 class LangColor(StrEnum):
     GOD = BLUE
-    VERB = RED
+    VERB = PINK
     YOU = GREEN
-    PARTICLES = PINK
+    PARTICLES = ORANGE
     OBJECTS = YELLOW
 
 
@@ -129,16 +131,14 @@ class Node:
             states[i].points.move_to(position)
 
         animations = []
+        animations.append(Write(states[0], duration=3.0))
         for i in range(len(states) - 1):
-            if i == 0:
-                animations.append(Write(states[i], duration=3.0))
-
             animations.append(
                 TransformMatchingDiff(states[i], states[i + 1], duration=1.0)
             )
             animations.append(Wait(1.0))
 
-        return Succession(*animations, Wait(2.0), FadeOut(states[len(states) - 1]))
+        return Succession(*animations, Wait(1.0), FadeOut(states[len(states) - 1]))
 
         # current = states.pop(0)
         #
@@ -150,10 +150,49 @@ class Node:
 
 
 class Sloka:
-    lines: List[Node]
+    sanskrit: List[List[Node]]
+    english: List[List[Node]]
 
-    def __init__(self, lines):
-        self.lines = lines
+    def __init__(self, sanskrit, english):
+        self.sanskrit = sanskrit
+        self.english = english
+
+    def teach(self, t: Timeline):
+        sloka = []
+
+        for i in range(len(self.sanskrit)):
+            line = ""
+            for sentence in self.sanskrit[i]:
+                line += sentence.typst_code(Language.SANSKRIT)
+
+            for i in range(i + 1):
+                line += "।"
+
+            sloka.append(TypstText(line, scale=SCALE))
+
+        sloka = Group(*sloka)
+        sloka.points.arrange(DOWN)
+
+        for line in sloka:
+            t.play(Write(line, duration=6.0))
+
+        t.play(FadeOut(sloka))
+
+        for i in range(len(self.sanskrit)):
+            for j in range(len(self.sanskrit[i])):
+                t.play(
+                    Aligned(
+                        self.sanskrit[i][j].decompose(
+                            Language.SANSKRIT, ORIGIN + UP / SCALE * 1.5
+                        ),
+                        self.sanskrit[i][j].decompose(Language.TRANSLIT, ORIGIN),
+                        self.english[i][j].decompose(
+                            Language.ENGLISH, ORIGIN + DOWN / SCALE * 1.5
+                        ),
+                    )
+                )
+
+        # (lambda line: line.text)(x) for line in self.sanskrit
 
 
 def Junicode(text: str, color: str, label: str):
@@ -168,152 +207,132 @@ def Jaini(text: str, color: str, label: str):
 
 class SlokaTime(Timeline):
     # CONFIG = Config(fps=60, background_color=Color(PURE_GREEN))
+    CONFIG = Config(fps=60)
 
     def construct(self):
-        sa = Node(
-            "yo mAM pashyati sarvatra sarvaM cha mayi pashyati",
-            children=[
-                Node("yo", children=[Node("yo", LangColor.YOU)]),
-                Node("mAM", children=[Node("mAm", LangColor.GOD)]),
-                Node("pashyati", children=[Node("pashyati", LangColor.VERB)]),
-                Node("sarvatra", children=[Node("sarvatra", LangColor.OBJECTS)]),
-                Node("sarvaM", children=[Node("sarvam", LangColor.OBJECTS)]),
-                Node("cha", children=[Node("cha", LangColor.PARTICLES)]),
-                Node("mayi", children=[Node("mayi", LangColor.GOD)]),
-                Node("pashyati", children=[Node("pashyati", LangColor.VERB)]),
+        sloka = Sloka(
+            [
+                [
+                    Node(
+                        "yo mAM pashyati sarvatra",
+                        children=[
+                            Node("yo", children=[Node("yo", LangColor.YOU)]),
+                            Node("mAM", children=[Node("mAm", LangColor.GOD)]),
+                            Node(
+                                "pashyati", children=[Node("pashyati", LangColor.VERB)]
+                            ),
+                            Node(
+                                "sarvatra",
+                                children=[Node("sarvatra", LangColor.OBJECTS)],
+                            ),
+                        ],
+                    ),
+                    Node(
+                        "sarvaM cha mayi pashyati",
+                        children=[
+                            Node(
+                                "sarvaM", children=[Node("sarvam", LangColor.OBJECTS)]
+                            ),
+                            Node("cha", children=[Node("cha", LangColor.PARTICLES)]),
+                            Node("mayi", children=[Node("mayi", LangColor.GOD)]),
+                            Node(
+                                "pashyati", children=[Node("pashyati", LangColor.VERB)]
+                            ),
+                        ],
+                    ),
+                ],
+                [
+                    Node(
+                        "tasyAhaM na praNashyAmi",
+                        children=[
+                            Node(
+                                "tasyAhaM",
+                                children=[
+                                    Node("tasya", LangColor.YOU),
+                                    Node("aham", LangColor.GOD),
+                                ],
+                            ),
+                            Node("na", children=[Node("na", LangColor.PARTICLES)]),
+                            Node(
+                                "praNashyAmi",
+                                children=[Node("praNashyAmi", LangColor.VERB)],
+                            ),
+                        ],
+                    ),
+                    Node(
+                        "sa cha me na praNashyati",
+                        children=[
+                            Node("sa", children=[Node("sa", LangColor.YOU)]),
+                            Node("ca", children=[Node("ca", LangColor.PARTICLES)]),
+                            Node("me", children=[Node("me", LangColor.GOD)]),
+                            Node("na", children=[Node("na", LangColor.PARTICLES)]),
+                            Node(
+                                "praNashyati",
+                                children=[Node("praNashyati", LangColor.VERB)],
+                            ),
+                        ],
+                    ),
+                ],
+            ],
+            [
+                [
+                    Node(
+                        "He who sees me everywhere",
+                        children=[
+                            Node(
+                                "He who",
+                                children=[Node("He who", LangColor.YOU)],
+                            ),
+                            Node("sees", children=[Node("sees", LangColor.VERB)]),
+                            Node("me", children=[Node("me", LangColor.GOD)]),
+                            Node(
+                                "everywhere",
+                                children=[Node("everywhere", LangColor.OBJECTS)],
+                            ),
+                        ],
+                    ),
+                    Node(
+                        "and sees all things in me",
+                        children=[
+                            Node("and", children=[Node("and", LangColor.PARTICLES)]),
+                            Node("sees", children=[Node("sees", LangColor.VERB)]),
+                            Node(
+                                "all things",
+                                children=[Node("all things", LangColor.OBJECTS)],
+                            ),
+                            Node("in me", children=[Node("in me", LangColor.GOD)]),
+                        ],
+                    ),
+                ],
+                [
+                    Node(
+                        "to him, I am not lost,",
+                        children=[
+                            Node(
+                                "to him, I",
+                                children=[
+                                    Node("to him", LangColor.YOU),
+                                    Node(","),
+                                    Node("I", LangColor.GOD),
+                                ],
+                            ),
+                            Node("am", children=[Node("am")]),
+                            Node("not", children=[Node("not", LangColor.PARTICLES)]),
+                            Node("lost", children=[Node("lost", LangColor.VERB)]),
+                        ],
+                    ),
+                    Node(
+                        "and he is not lost to me",
+                        children=[
+                            Node("and", children=[Node("and", LangColor.PARTICLES)]),
+                            Node("he", children=[Node("he", LangColor.YOU)]),
+                            Node("is", children=[Node("is")]),
+                            Node("not", children=[Node("not", LangColor.PARTICLES)]),
+                            Node("lost", children=[Node("lost", LangColor.VERB)]),
+                            Node("to me", children=[Node("to me", LangColor.GOD)]),
+                        ],
+                    ),
+                ],
             ],
         )
-        en = Node(
-            "He who sees me everywhere and sees all things in me-",
-            children=[
-                Node(
-                    "He who",
-                    children=[Node("He who", LangColor.YOU)],
-                ),
-                Node("sees", children=[Node("sees", LangColor.VERB)]),
-                Node("me", children=[Node("me", LangColor.GOD)]),
-                Node("everywhere", children=[Node("everywhere", LangColor.OBJECTS)]),
-                # Node(",", children=[Node(",")]),
-                Node("and", children=[Node("and", LangColor.PARTICLES)]),
-                Node("sees", children=[Node("sees", LangColor.VERB)]),
-                Node("all things", children=[Node("all things", LangColor.OBJECTS)]),
-                Node("in me", children=[Node("in me", LangColor.GOD)]),
-            ],
-        )
-
-        self.play(
-            Aligned(
-                sa.decompose(Language.SANSKRIT, ORIGIN + UP / SCALE * 1.5),
-                sa.decompose(Language.TRANSLIT, ORIGIN),
-                en.decompose(Language.ENGLISH, ORIGIN + DOWN / SCALE * 1.5),
-            )
-        )
-
-        sa = Node(
-            "tasyAhaM na praNashyAmi sa ca me na praNashyati",
-            children=[
-                Node(
-                    "tasyAhaM",
-                    children=[
-                        Node("tasya", LangColor.YOU),
-                        Node("aham", LangColor.GOD),
-                    ],
-                ),
-                Node("na", children=[Node("na", LangColor.PARTICLES)]),
-                Node("praNashyAmi", children=[Node("praNashyAmi", LangColor.VERB)]),
-                Node("sa", children=[Node("sa", LangColor.YOU)]),
-                Node("ca", children=[Node("ca", LangColor.PARTICLES)]),
-                Node("me", children=[Node("me", LangColor.GOD)]),
-                Node("na", children=[Node("na", LangColor.PARTICLES)]),
-                Node("praNashyati", children=[Node("praNashyati", LangColor.VERB)]),
-            ],
-        )
-
-        en = Node(
-            "to him, I am not lost, and he is not lost to me",
-            children=[
-                Node(
-                    "to him, I",
-                    children=[
-                        Node("to him", LangColor.YOU),
-                        Node(","),
-                        Node("I", LangColor.GOD),
-                    ],
-                ),
-                Node("am", children=[Node("am")]),
-                Node("not", children=[Node("not", LangColor.PARTICLES)]),
-                Node("lost", children=[Node("lost", LangColor.VERB)]),
-                Node(",", children=[Node(",")]),
-                Node("and", children=[Node("and", LangColor.PARTICLES)]),
-                Node("he", children=[Node("he", LangColor.YOU)]),
-                Node("is", children=[Node("is")]),
-                Node("not", children=[Node("not", LangColor.PARTICLES)]),
-                Node("lost", children=[Node("lost", LangColor.VERB)]),
-                Node("to me", children=[Node("to me", LangColor.GOD)]),
-            ],
-        )
-
-        # text = Node(
-        #     "nAvadhItamastu",
-        #     children=[
-        #         Node("nau"),
-        #         Node(
-        #             "adhItamastu",
-        #             children=[
-        #                 Node("adhItam"),
-        #                 Node("astu"),
-        #             ],
-        #         ),
-        #     ],
-        # )
-
-        # print(*text.strings(Language.SANSKRIT), sep="\n\n")
-        # print(*text.typsts(Language.SANSKRIT), sep="\n\n")
-
-        self.play(
-            Aligned(
-                sa.decompose(Language.SANSKRIT, ORIGIN + UP / SCALE * 1.5),
-                sa.decompose(Language.TRANSLIT, ORIGIN),
-                en.decompose(Language.ENGLISH, ORIGIN + DOWN / SCALE * 1.5),
-            )
-        )
-
-        # .decompose(self, Language.SANSKRIT)
-
-        # node1 = color_revealerV2(Language.SANSKRIT, sa)
-        # node2 = color_revealerV2(Language.TRANSLIT, sa)
-        # node3 = color_revealerV2(Language.ENGLISH, en)
-
-        # node =
-
-        # node1.bg.points.move_to(ORIGIN + UP / SCALE * 1.5)
-        # node2.bg.points.move_to(ORIGIN)
-        # node3.bg.points.move_to(ORIGIN + DOWN / SCALE * 1.5)
-        # print("styles: " + str(node1.bg.get_available_styles()))
-        # node1.bg[0].scale_descendants_stroke_radius(2)
-        # gold1 = Group(*node1.bg.copy())
-        # gold1 = Group(*node1.bg.copy(), color=PURE_GREEN)
-        # gold1[0].scale_descendants_stroke_radius(2.0)
-
-        # self.play(
-        #     Aligned(
-        #         # Write(node1.bg, at=1.0, duration=6.0),
-        #         Write(node1.bg, duration=3.0),
-        #         Write(node2.bg, duration=3.0),
-        #         Write(node3.bg, duration=3.0),
-        #     )
-        # )
-        # self.play(
-        #     Write(node1.bg, duration=3.0),
-        # )
-        # n1a = node1.deconstruct_in_place()
-        # n2a = node2.deconstruct_in_place(self)
-        # n3a = node3.deconstruct_in_place(self)
-
-        # self.play(Aligned(AnimGroup(n1a, n2a, n3a)))
-        # self.play(Aligned(AnimGroup(n1a)))
-
-        # self.play(Write(node1.bg, duration=6.0))
-        # # self.play(Write(node1.bg))
-        # self.play(Write(node2.bg, duration=6.0))
-        # node.deconstruct(self)
+        sloka.teach(self)

@@ -45,7 +45,12 @@ from janim.imports import (
     TypstText,
     Wait,
     Write,
+    TransformMatchingDiff,
 )
+
+# from janim.anims.transform import (
+#     TransformMatchingDiff,
+# )
 from numpy.char import join
 
 SCALE = 1.5
@@ -79,6 +84,7 @@ class Node:
     # language: Language
 
     text: str
+    label: str
     color: str
 
     children: List[Node]
@@ -92,18 +98,19 @@ class Node:
         self.text = text
         self.color = color
         self.children = children
+        self.label = f"label{abs(hash(text)) % (10**8)}"
 
     # Get the typst code for the text
     def typst_code(self, language: Language):
         match language:
             case Language.ENGLISH:
-                return Junicode(self.text, self.color)
+                return Junicode(self.text, self.color, self.label)
             case Language.TRANSLIT:
                 iast = transliterate(self.text, sanscript.ITRANS, sanscript.IAST)
-                return Junicode(iast, self.color)
+                return Junicode(iast, self.color, self.label)
             case Language.SANSKRIT:
                 deva = transliterate(self.text, sanscript.ITRANS, sanscript.DEVANAGARI)
-                return Junicode(deva, self.color)
+                return Jaini(deva, self.color, self.label)
 
     def strings(self, language: Language):
         strings = [self.typst_code(language)]
@@ -136,10 +143,11 @@ class Node:
         ]
 
         current = states.pop(0)
-        j.play(Write(current, duration=3.0))
+
+        j.play(Write(current, duration=1.0))
 
         for state in states:
-            j.play(TransformMatchingShapes(current, state, duration=1.0))
+            j.play(TransformMatchingDiff(current, state, duration=1.0))
             current = state
 
 
@@ -150,12 +158,14 @@ class Sloka:
         self.lines = lines
 
 
-def Junicode(text: str, color: str = WHITE):
-    return f'#text(font: "Junicode", stroke: none, fill: rgb("{color}"))[{text}]'
+def Junicode(text: str, color: str, label: str):
+    return (
+        f'#text(font: "Junicode", stroke: none, fill: rgb("{color}"))[{text}] <{label}>'
+    )
 
 
-def Jaini(text: str, color: str = WHITE):
-    return f'#text(font: "Jaini", stroke: none, fill: rgb("{color}"))[{text}]'
+def Jaini(text: str, color: str, label: str):
+    return f'#text(font: "Jaini", stroke: none, fill: rgb("{color}"))[{text}] <{label}>'
 
 
 def aft(a, b):
@@ -231,7 +241,7 @@ class SlokaTime(Timeline):
         # Node()
         # node1 = external_sandhi_v2(words)
         sa = Node(
-            "tasyAhaM na praNashyAmi sa ca me na praNashyAmi",
+            "tasyAhaM na praNashyAmi sa ca me na praNashyati",
             children=[
                 Node("tasyAhaM", children=[Node("tasya", GREEN), Node("aham", BLUE)]),
                 Node("na", children=[Node("na", RED)]),
@@ -277,7 +287,9 @@ class SlokaTime(Timeline):
             ],
         )
 
-        print(*text.strings(Language.SANSKRIT), sep="\n\n")
+        # print(*text.strings(Language.SANSKRIT), sep="\n\n")
+        print(*text.typsts(Language.SANSKRIT), sep="\n\n")
+
         sa.decompose(self, Language.SANSKRIT)
 
         # node1 = color_revealerV2(Language.SANSKRIT, sa)

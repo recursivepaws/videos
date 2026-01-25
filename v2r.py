@@ -1,10 +1,8 @@
 from __future__ import annotations
+
 from dataclasses import dataclass
-from functools import reduce
-from operator import add
-from tkinter import BOTTOM
-from typing import List, LiteralString, Optional
-from enum import Enum
+from enum import Enum, StrEnum
+from typing import List
 
 # Import the necessary modules from indic_transliteration
 from indic_transliteration import sanscript
@@ -13,46 +11,23 @@ from janim.imports import (
     BLUE,
     DOWN,
     GREEN,
-    LEFT,
     ORANGE,
-    # LEFT,
     ORIGIN,
     PINK,
-    PURE_BLUE,
-    PURE_GREEN,
     RED,
-    RIGHT,
-    # RIGHT,
     UP,
     WHITE,
     YELLOW,
     Aligned,
-    AnimGroup,
-    Color,
-    Config,
-    Dot,
-    FadeIn,
     FadeOut,
-    Group,
-    Item,
-    MoveToTarget,
-    ShowSubitemsOneByOne,
     Succession,
-    # Succession,
     Timeline,
-    TransformMatchingShapes,
-    Triangle,
+    TransformMatchingDiff,
     TypstText,
     Vect,
     Wait,
     Write,
-    TransformMatchingDiff,
 )
-
-# from janim.anims.transform import (
-#     TransformMatchingDiff,
-# )
-from numpy.char import join
 
 SCALE = 1.5
 
@@ -61,6 +36,14 @@ class Language(Enum):
     ENGLISH = 1
     SANSKRIT = 2
     TRANSLIT = 3
+
+
+class LangColor(StrEnum):
+    GOD = BLUE
+    VERB = RED
+    YOU = GREEN
+    PARTICLES = PINK
+    OBJECTS = YELLOW
 
 
 test_json = """
@@ -148,14 +131,14 @@ class Node:
         animations = []
         for i in range(len(states) - 1):
             if i == 0:
-                animations.append(Write(states[i], duration=6.0))
+                animations.append(Write(states[i], duration=3.0))
 
             animations.append(
                 TransformMatchingDiff(states[i], states[i + 1], duration=1.0)
             )
             animations.append(Wait(1.0))
 
-        return Succession(*animations)
+        return Succession(*animations, Wait(2.0), FadeOut(states[len(states) - 1]))
 
         # current = states.pop(0)
         #
@@ -183,89 +166,66 @@ def Jaini(text: str, color: str, label: str):
     return f'#text(font: "Jaini", stroke: none, fill: rgb("{color}"))[{text}] <{label}>'
 
 
-def aft(a, b):
-    if a == b:
-        return None
-    else:
-        return a
-
-
 class SlokaTime(Timeline):
     # CONFIG = Config(fps=60, background_color=Color(PURE_GREEN))
 
     def construct(self):
-        # node = Node(
-        #     "yo mAM pashyati sarvatra sarvaM cha mayi pashyati tasyAhaM na praNashyAmi sa ca me na praNashyati",
-        #     Children(
-        #         [
-        #             # Node(
-        #             #     "yo mAM pashyati sarvatra sarvaM cha mayi pashyati",
-        #             #     Children(
-        #             #         [
-        #             #             Node("yo mAM pashyati sarvatra", None),
-        #             #             Node("sarvaM cha mayi pashyati", None),
-        #             #         ],
-        #             #         "+",
-        #             #     ),
-        #             # ),
-        #             Node(
-        #                 "yo mAM pashyati sarvatra sarvaM cha mayi pashyati",
-        #                 Children(
-        #                     [
-        #                         (lambda s: Node(s, None))(s)
-        #                         for s in "yo mAm pashyati sarvatra sarvam cha mayi pashyati".split(
-        #                             " "
-        #                         )
-        #                     ],
-        #                     "+",
-        #                 ),
-        #             ),
-        #             Node(
-        #                 "tasyAhaM na praNashyAmi sa ca me na praNashyati",
-        #                 Children(
-        #                     [
-        #                         Node("tasyAhaM na praNashyAmi", None),
-        #                         Node("sa ca me na praNashyati", None),
-        #                     ],
-        #                     "+",
-        #                 ),
-        #             ),
-        #         ],
-        #         "|",
-        #     ),
-        # )
+        sa = Node(
+            "yo mAM pashyati sarvatra sarvaM cha mayi pashyati",
+            children=[
+                Node("yo", children=[Node("yo", LangColor.YOU)]),
+                Node("mAM", children=[Node("mAm", LangColor.GOD)]),
+                Node("pashyati", children=[Node("pashyati", LangColor.VERB)]),
+                Node("sarvatra", children=[Node("sarvatra", LangColor.OBJECTS)]),
+                Node("sarvaM", children=[Node("sarvam", LangColor.OBJECTS)]),
+                Node("cha", children=[Node("cha", LangColor.PARTICLES)]),
+                Node("mayi", children=[Node("mayi", LangColor.GOD)]),
+                Node("pashyati", children=[Node("pashyati", LangColor.VERB)]),
+            ],
+        )
+        en = Node(
+            "He who sees me everywhere and sees all things in me-",
+            children=[
+                Node(
+                    "He who",
+                    children=[Node("He who", LangColor.YOU)],
+                ),
+                Node("sees", children=[Node("sees", LangColor.VERB)]),
+                Node("me", children=[Node("me", LangColor.GOD)]),
+                Node("everywhere", children=[Node("everywhere", LangColor.OBJECTS)]),
+                # Node(",", children=[Node(",")]),
+                Node("and", children=[Node("and", LangColor.PARTICLES)]),
+                Node("sees", children=[Node("sees", LangColor.VERB)]),
+                Node("all things", children=[Node("all things", LangColor.OBJECTS)]),
+                Node("in me", children=[Node("in me", LangColor.GOD)]),
+            ],
+        )
 
-        # node = Node(
-        #     before="yo mAM pashyati sarvatra sarvaM cha mayi pashyati",
-        #     children=Children(
-        #         [
-        #             (lambda s: Node(s, None, None))(s)
-        #             for s in "yo mAm pashyati sarvatra sarvam cha mayi pashyati".split(
-        #                 " "
-        #             )
-        #         ],
-        #         "+",
-        #     ),
-        #     after=None,
-        # )
+        self.play(
+            Aligned(
+                sa.decompose(Language.SANSKRIT, ORIGIN + UP / SCALE * 1.5),
+                sa.decompose(Language.TRANSLIT, ORIGIN),
+                en.decompose(Language.ENGLISH, ORIGIN + DOWN / SCALE * 1.5),
+            )
+        )
 
-        # node = node
-
-        # He who sees me everywhere and sees all things in me- to him I am not lost, nor is he lost to me
-
-        # Node()
-        # node1 = external_sandhi_v2(words)
         sa = Node(
             "tasyAhaM na praNashyAmi sa ca me na praNashyati",
             children=[
-                Node("tasyAhaM", children=[Node("tasya", GREEN), Node("aham", BLUE)]),
-                Node("na", children=[Node("na", RED)]),
-                Node("praNashyAmi", children=[Node("praNashyAmi", PINK)]),
-                Node("sa", children=[Node("sa", YELLOW)]),
-                Node("ca", children=[Node("ca", ORANGE)]),
-                Node("me", children=[Node("me", GREEN)]),
-                Node("na", children=[Node("na", RED)]),
-                Node("praNashyati", children=[Node("praNashyati", PINK)]),
+                Node(
+                    "tasyAhaM",
+                    children=[
+                        Node("tasya", LangColor.YOU),
+                        Node("aham", LangColor.GOD),
+                    ],
+                ),
+                Node("na", children=[Node("na", LangColor.PARTICLES)]),
+                Node("praNashyAmi", children=[Node("praNashyAmi", LangColor.VERB)]),
+                Node("sa", children=[Node("sa", LangColor.YOU)]),
+                Node("ca", children=[Node("ca", LangColor.PARTICLES)]),
+                Node("me", children=[Node("me", LangColor.GOD)]),
+                Node("na", children=[Node("na", LangColor.PARTICLES)]),
+                Node("praNashyati", children=[Node("praNashyati", LangColor.VERB)]),
             ],
         )
 
@@ -274,33 +234,38 @@ class SlokaTime(Timeline):
             children=[
                 Node(
                     "to him, I",
-                    children=[Node("to him", GREEN), Node(","), Node("I", BLUE)],
-                ),
-                Node("am", children=[Node("am")]),
-                Node("not", children=[Node("not", RED)]),
-                Node("lost", children=[Node("lost", PINK)]),
-                Node(",", children=[Node(",")]),
-                Node("and", children=[Node("and", ORANGE)]),
-                Node("he", children=[Node("he", YELLOW)]),
-                Node("is", children=[Node("is")]),
-                Node("not", children=[Node("not", RED)]),
-                Node("lost", children=[Node("lost", PINK)]),
-                Node("to me", children=[Node("to me", GREEN)]),
-            ],
-        )
-        text = Node(
-            "nAvadhItamastu",
-            children=[
-                Node("nau"),
-                Node(
-                    "adhItamastu",
                     children=[
-                        Node("adhItam"),
-                        Node("astu"),
+                        Node("to him", LangColor.YOU),
+                        Node(","),
+                        Node("I", LangColor.GOD),
                     ],
                 ),
+                Node("am", children=[Node("am")]),
+                Node("not", children=[Node("not", LangColor.PARTICLES)]),
+                Node("lost", children=[Node("lost", LangColor.VERB)]),
+                Node(",", children=[Node(",")]),
+                Node("and", children=[Node("and", LangColor.PARTICLES)]),
+                Node("he", children=[Node("he", LangColor.YOU)]),
+                Node("is", children=[Node("is")]),
+                Node("not", children=[Node("not", LangColor.PARTICLES)]),
+                Node("lost", children=[Node("lost", LangColor.VERB)]),
+                Node("to me", children=[Node("to me", LangColor.GOD)]),
             ],
         )
+
+        # text = Node(
+        #     "nAvadhItamastu",
+        #     children=[
+        #         Node("nau"),
+        #         Node(
+        #             "adhItamastu",
+        #             children=[
+        #                 Node("adhItam"),
+        #                 Node("astu"),
+        #             ],
+        #         ),
+        #     ],
+        # )
 
         # print(*text.strings(Language.SANSKRIT), sep="\n\n")
         # print(*text.typsts(Language.SANSKRIT), sep="\n\n")

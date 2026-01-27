@@ -21,6 +21,8 @@ from janim.imports import (
     Aligned,
     FadeOut,
     Group,
+    GrowFromCenter,
+    ShrinkToCenter,
     Succession,
     Timeline,
     TransformMatchingDiff,
@@ -30,7 +32,7 @@ from janim.imports import (
     Write,
 )
 
-SCALE = 1.5
+SCALE = 2.0
 
 
 class Language(Enum):
@@ -113,9 +115,18 @@ class Node:
 
         animations = []
         animations.append(Write(states[0], duration=1.0))
+
         for i in range(len(states) - 1):
             animations.append(
-                TransformMatchingDiff(states[i], states[i + 1], duration=0.5)
+                TransformMatchingDiff(
+                    states[i],
+                    states[i + 1],
+                    duration=0.5,
+                    mismatch=(  # type: ignore[arg-type]
+                        lambda item, p, **kwargs: ShrinkToCenter(item, **kwargs),
+                        lambda item, p, **kwargs: GrowFromCenter(item, **kwargs),
+                    ),
+                )
             )
             # animations.append(Wait(1.0))
 
@@ -127,10 +138,12 @@ class Node:
 
 
 class Sloka:
+    citation: Node
     sanskrit: List[List[Node]]
     english: List[List[Node]]
 
-    def __init__(self, sanskrit, english):
+    def __init__(self, citation: str, sanskrit, english):
+        self.citation = Node(citation)
         self.sanskrit = sanskrit
         self.english = english
 
@@ -153,18 +166,23 @@ class Sloka:
         for line in sloka:
             t.play(Write(line, duration=6.0))
 
-        t.play(FadeOut(sloka))
+        citation = TypstText(self.citation.typst_code(Language.ENGLISH), scale=SCALE)
+        citation.points.next_to(sloka, DOWN)
+        t.play(Wait(2.0))
+        t.play(Write(citation, duration=0.5))
+        t.play(Wait(0.5))
+        t.play(FadeOut(Group(sloka, citation)))
 
         for i in range(len(self.sanskrit)):
             for j in range(len(self.sanskrit[i])):
                 t.play(
                     Aligned(
                         self.sanskrit[i][j].decompose(
-                            Language.SANSKRIT, ORIGIN + UP / SCALE * 1.5
+                            Language.SANSKRIT, ORIGIN + UP / SCALE * 2.0
                         ),
                         self.sanskrit[i][j].decompose(Language.TRANSLIT, ORIGIN),
                         self.english[i][j].decompose(
-                            Language.ENGLISH, ORIGIN + DOWN / SCALE * 1.5
+                            Language.ENGLISH, ORIGIN + DOWN / SCALE * 2.0
                         ),
                     )
                 )

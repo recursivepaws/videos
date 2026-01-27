@@ -14,6 +14,7 @@ class SlokaTime(Timeline):
 
     def construct(self):
         sloka = Sloka(
+            "BG 6.30",
             [
                 [
                     Node(

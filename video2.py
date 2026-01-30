@@ -6,13 +6,16 @@ from janim.imports import (
     Timeline,
 )
 
-from framework import LangColor, Node, Sloka
+from framework import LangColor, Node, Question, Sloka
 
 
 class SlokaTime(Timeline):
     CONFIG = Config(fps=60)
 
     def construct(self):
+        question = Question("Where can I find God?")
+        self.play(question.ask())
+
         sloka = Sloka(
             "BG 6.30",
             [
@@ -139,4 +142,5 @@ class SlokaTime(Timeline):
                 ],
             ],
         )
+
         sloka.teach(self)

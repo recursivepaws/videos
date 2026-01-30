@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import Enum, StrEnum
-from typing import List
+from typing import List, Optional
 
 # Import the necessary modules from indic_transliteration
 from indic_transliteration import sanscript
@@ -137,12 +137,33 @@ class Node:
         )
 
 
+class Question:
+    question: Node
+
+    def __init__(
+        self,
+        question: str,
+    ):
+        self.question = Node(question)
+
+    def ask(self):
+        typst = TypstText(self.question.typst_code(Language.ENGLISH), scale=SCALE)
+        return Succession(
+            Write(typst, duration=0.5), Wait(3.0), FadeOut(typst, duration=1.0)
+        )
+
+
 class Sloka:
     citation: Node
     sanskrit: List[List[Node]]
     english: List[List[Node]]
 
-    def __init__(self, citation: str, sanskrit, english):
+    def __init__(
+        self,
+        citation: str,
+        sanskrit: List[List[Node]],
+        english: List[List[Node]],
+    ):
         self.citation = Node(citation)
         self.sanskrit = sanskrit
         self.english = english

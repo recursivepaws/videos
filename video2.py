@@ -13,12 +13,11 @@ class SlokaTime(Timeline):
     CONFIG = Config(fps=60)
 
     def construct(self):
-        question = Question("Where can I find God?")
-        self.play(question.ask())
+        self.play(Question("Where can I find God?").ask())
 
         sloka = Sloka(
-            "BG 6.30",
-            [
+            citation="BG 6.30",
+            sanskrit=[
                 [
                     Node(
                         "yo mAM pashyati sarvatra",
@@ -81,7 +80,7 @@ class SlokaTime(Timeline):
                     ),
                 ],
             ],
-            [
+            english=[
                 [
                     Node(
                         "He who sees me everywhere",
@@ -143,4 +142,4 @@ class SlokaTime(Timeline):
             ],
         )
 
-        sloka.teach(self)
+        self.play(sloka.teach())

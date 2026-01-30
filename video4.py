@@ -1,43 +1,111 @@
 from __future__ import annotations
 
 # Import the necessary modules from indic_transliteration
+from indic_transliteration import sanscript
 from janim.imports import (
-    DOWN,
-    ORIGIN,
-    UP,
-    Aligned,
+    BLUE,
+    PURPLE,
+    RED,
     Config,
-    FadeOut,
     Timeline,
-    TypstText,
-    Wait,
-    Write,
 )
 
-from framework import SCALE, Language, Node
+from framework import Declension, LangColor, Node, Sloka, translit
+
+# vAgarthAviva saMpR^iktau vAgarthapratipattaye.
+# jagataH pitarau vande pArvatIparameshvarau..
 
 
 class SlokaTime(Timeline):
     CONFIG = Config(fps=60)
 
     def construct(self):
-        node = Node(
-            "sarvaM",
-            children=[
-                Node(
-                    "sarvam",
-                ),
+        sloka = Sloka(
+            "",
+            sanskrit=[
+                [
+                    Node(
+                        "vAgarthAviva saMpR^iktau vAgarthapratipattaye",
+                        children=[
+                            Node(
+                                "vAgarthAviva",
+                                children=[
+                                    Node(
+                                        "vAgarthau",
+                                        children=[Node("vAk"), Node("artha")],
+                                    ),
+                                    Node("iva"),
+                                ],
+                            ),
+                            Node("saMpR^iktau"),
+                            Node(
+                                "vAgarthapratipattaye",
+                                children=[Node("vAgartha"), Node("pratipattaye")],
+                            ),
+                        ],
+                    ),
+                ],
+                [
+                    Node(
+                        "jagataH pitarau vande pArvatIparameshvarau",
+                        children=[
+                            Node("jagataH"),
+                            Node("pitarau"),
+                            Node("vande"),
+                            Node(
+                                "pArvaItparameshvarau",
+                                children=[Node("pArvatI"), Node("parameshvara")],
+                            ),
+                        ],
+                    )
+                ],
+            ],
+            # jagataH pitarau vande pArvatIparameshvarau..
+            english=[
+                [
+                    Node(
+                        "like a word joined with its meaning, to attain "
+                        "vAgarthAviva saMpR^iktau vAgarthapratipattaye",
+                        children=[
+                            Node(
+                                "vAgarthAviva",
+                                children=[
+                                    Node(
+                                        "vAgarthau",
+                                        children=[Node("vAk"), Node("artha")],
+                                    ),
+                                    Node("iva"),
+                                ],
+                            ),
+                            Node("saMpR^iktau"),
+                            Node(
+                                "vAgarthapratipattaye",
+                                children=[Node("vAgartha"), Node("pratipattaye")],
+                            ),
+                        ],
+                    ),
+                ],
+                [
+                    Node(
+                        f"I bow to the two parents of the world, {translit('pArvatI')} and {translit('shiva')}",
+                        children=[
+                            Node("I bow"),
+                            Node("to"),
+                            Node("the two parents", declension=Declension.ACC),
+                            Node("of the world"),
+                            Node("vande"),
+                            Node(
+                                f"{translit('pArvatI')} and {translit('shiva')}",
+                                children=[
+                                    Node(translit("pArvatI"), color=RED),
+                                    Node(translit("shiva"), color=BLUE),
+                                ],
+                                color=PURPLE,
+                            ),
+                        ],
+                    )
+                ],
             ],
         )
 
-        n = Node("Where can I find God?")
-        t = TypstText(n.typst_code(Language.ENGLISH), scale=SCALE)
-        self.play(Write(t, duration=0.5))
-        self.play(Wait(3.0))
-        self.play(FadeOut(t, duration=1.0))
-        # self.play(
-        #     Aligned(
-        #         node.decompose(Language.SANSKRIT, ORIGIN + UP),
-        #         node.decompose(Language.TRANSLIT, ORIGIN + DOWN),
-        #     )
-        # )
+        self.play(sloka.teach())

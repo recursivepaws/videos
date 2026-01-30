@@ -1,15 +1,16 @@
 from __future__ import annotations
 
 # Import the necessary modules from indic_transliteration
+from indic_transliteration import sanscript
 from janim.imports import (
+    BLUE,
+    PURPLE,
+    RED,
     Config,
     Timeline,
 )
 
-from framework import LangColor, Node, Sloka
-
-# vAgarthAviva sampruktau vAgarthapratipattaye
-# jagataH pitarau vande pArvatIparameshvarau
+from framework import Declension, LangColor, Node, Sloka, translit
 
 # vAgarthAviva saMpR^iktau vAgarthapratipattaye.
 # jagataH pitarau vande pArvatIparameshvarau..
@@ -20,7 +21,8 @@ class SlokaTime(Timeline):
 
     def construct(self):
         sloka = Sloka(
-            [
+            "",
+            sanskrit=[
                 [
                     Node(
                         "vAgarthAviva saMpR^iktau vAgarthapratipattaye",
@@ -58,9 +60,11 @@ class SlokaTime(Timeline):
                     )
                 ],
             ],
-            [
+            # jagataH pitarau vande pArvatIparameshvarau..
+            english=[
                 [
                     Node(
+                        "like a word joined with its meaning, to attain "
                         "vAgarthAviva saMpR^iktau vAgarthapratipattaye",
                         children=[
                             Node(
@@ -83,18 +87,25 @@ class SlokaTime(Timeline):
                 ],
                 [
                     Node(
-                        "jagataH pitarau vande pArvatIparameshvarau",
+                        f"I bow to the two parents of the world, {translit('pArvatI')} and {translit('shiva')}",
                         children=[
-                            Node("jagataH"),
-                            Node("pitarau"),
+                            Node("I bow"),
+                            Node("to"),
+                            Node("the two parents", declension=Declension.ACC),
+                            Node("of the world"),
                             Node("vande"),
                             Node(
-                                "pArvaItparameshvarau",
-                                children=[Node("pArvatI"), Node("parameshvara")],
+                                f"{translit('pArvatI')} and {translit('shiva')}",
+                                children=[
+                                    Node(translit("pArvatI"), color=RED),
+                                    Node(translit("shiva"), color=BLUE),
+                                ],
+                                color=PURPLE,
                             ),
                         ],
                     )
                 ],
             ],
         )
-        sloka.teach(self)
+
+        self.play(sloka.teach())

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import Enum, StrEnum
-from typing import List, Optional
+from typing import List
 
 # Import the necessary modules from indic_transliteration
 from indic_transliteration import sanscript
@@ -24,7 +24,6 @@ from janim.imports import (
     GrowFromCenter,
     ShrinkToCenter,
     Succession,
-    Timeline,
     TransformMatchingDiff,
     TypstText,
     Vect,
@@ -50,6 +49,18 @@ class LangColor(StrEnum):
     OBJECTS = YELLOW
 
 
+class Declension(Enum):
+    NOP = 0
+    NOM = 1
+    ACC = 2
+    INS = 3
+    DAT = 4
+    ABL = 5
+    GEN = 6
+    LOC = 7
+    VOC = 8
+
+
 @dataclass
 class Node:
     text: str
@@ -62,6 +73,7 @@ class Node:
         self,
         text: str,
         color: str = WHITE,
+        declension: Declension = Declension.NOP,
         children: List[Node] = [],
     ):
         self.text = text
@@ -128,13 +140,16 @@ class Node:
                     ),
                 )
             )
-            # animations.append(Wait(1.0))
 
         return Succession(
             *animations,
             Wait(1.4),
             FadeOut(states[len(states) - 1], duration=0.5),
         )
+
+
+def translit(value: str):
+    return transliterate(value, sanscript.ITRANS, sanscript.IAST)
 
 
 class Question:
@@ -168,7 +183,7 @@ class Sloka:
         self.sanskrit = sanskrit
         self.english = english
 
-    def teach(self, t: Timeline):
+    def teach(self):
         sloka = []
 
         for i in range(len(self.sanskrit)):
@@ -184,19 +199,26 @@ class Sloka:
         sloka = Group(*sloka)
         sloka.points.arrange(DOWN)
 
+        animations = []
+
         for line in sloka:
-            t.play(Write(line, duration=6.0))
+            animations.append(Write(line, duration=6.0))
 
         citation = TypstText(self.citation.typst_code(Language.ENGLISH), scale=SCALE)
         citation.points.next_to(sloka, DOWN)
-        t.play(Wait(2.0))
-        t.play(Write(citation, duration=0.5))
-        t.play(Wait(0.5))
-        t.play(FadeOut(Group(sloka, citation)))
+
+        animations.append(
+            Succession(
+                Wait(2.0),
+                Write(citation, duration=0.5),
+                Wait(0.5),
+                FadeOut(Group(sloka, citation)),
+            )
+        )
 
         for i in range(len(self.sanskrit)):
             for j in range(len(self.sanskrit[i])):
-                t.play(
+                animations.append(
                     Aligned(
                         self.sanskrit[i][j].decompose(
                             Language.SANSKRIT, ORIGIN + UP / SCALE * 2.0
@@ -207,6 +229,8 @@ class Sloka:
                         ),
                     )
                 )
+
+        return Succession(*animations)
 
 
 def Junicode(text: str, color: str, label: str):

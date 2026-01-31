@@ -1,19 +1,34 @@
 from __future__ import annotations
+from enum import StrEnum
 
 # Import the necessary modules from indic_transliteration
 from indic_transliteration import sanscript
 from janim.imports import (
     BLUE,
+    GREEN,
+    ORANGE,
+    PINK,
     PURPLE,
     RED,
+    YELLOW,
     Config,
     Timeline,
 )
 
-from framework import Declension, LangColor, Node, Sloka, translit
+from framework import Declension, Node, Sloka, translit
 
-# vAgarthAviva saMpR^iktau vAgarthapratipattaye.
-# jagataH pitarau vande pArvatIparameshvarau..
+
+class LangColor(StrEnum):
+    GOD = BLUE
+    VERB = PINK
+    YOU = GREEN
+    PARTICLES = ORANGE
+    NEGATION = RED
+    OBJECTS = YELLOW
+
+
+# saha nAvavatu . saha nau bhunaktu . saha vIryaM karavAvahai . tejasvi nAvadhItamastu mA vidviShAvahai ..
+# OM shAntiH shAntiH shAntiH ..
 
 
 class SlokaTime(Timeline):
@@ -25,37 +40,69 @@ class SlokaTime(Timeline):
             sanskrit=[
                 [
                     Node(
-                        "vAgarthAviva saMpR^iktau vAgarthapratipattaye",
+                        "OM saha nAvavatu .",
                         children=[
+                            Node("OM"),
+                            Node("saha", color=LangColor.PARTICLES),
                             Node(
-                                "vAgarthAviva",
+                                "nAvavatu",
                                 children=[
-                                    Node(
-                                        "vAgarthau",
-                                        children=[Node("vAk"), Node("artha")],
-                                    ),
-                                    Node("iva"),
+                                    Node("nau", color=LangColor.YOU),
+                                    Node("avatu", color=LangColor.VERB),
                                 ],
                             ),
-                            Node("saMpR^iktau"),
+                            Node("."),
+                        ],
+                    ),
+                    Node(
+                        "saha nau bhunaktu .",
+                        children=[
                             Node(
-                                "vAgarthapratipattaye",
-                                children=[Node("vAgartha"), Node("pratipattaye")],
+                                "saha",
                             ),
+                            Node("nau", color=BLUE),
+                            Node("bhunaktu"),
+                            Node("."),
+                        ],
+                    ),
+                    Node(
+                        "saha vIryaM karavAvahai .",
+                        children=[
+                            Node("saha"),
+                            Node("vIryaM"),
+                            Node("karavAvahai"),
+                            Node("."),
                         ],
                     ),
                 ],
                 [
                     Node(
-                        "jagataH pitarau vande pArvatIparameshvarau",
+                        "tejasvi nAvadhItamastu mA vidviShAvahai ..",
                         children=[
-                            Node("jagataH"),
-                            Node("pitarau"),
-                            Node("vande"),
+                            Node("tejasvi"),
                             Node(
-                                "pArvaItparameshvarau",
-                                children=[Node("pArvatI"), Node("parameshvara")],
+                                "nAvadhItamastu",
+                                children=[
+                                    Node("nau"),
+                                    Node("adhItam"),
+                                    Node("astu"),
+                                ],
                             ),
+                            Node("mA"),
+                            Node("vidviShAvahai"),
+                            Node(".."),
+                        ],
+                    ),
+                ],
+                [
+                    Node(
+                        "OM shAntiH shAntiH shAntiH ..",
+                        children=[
+                            Node("OM"),
+                            Node("shAntiH"),
+                            Node("shAntiH"),
+                            Node("shAntiH"),
+                            Node(".."),
                         ],
                     )
                 ],
@@ -64,46 +111,53 @@ class SlokaTime(Timeline):
             english=[
                 [
                     Node(
-                        "like a word joined with its meaning, to attain "
-                        "vAgarthAviva saMpR^iktau vAgarthapratipattaye",
+                        f"{translit('OM')}; May [it] protect us both together.",
                         children=[
-                            Node(
-                                "vAgarthAviva",
-                                children=[
-                                    Node(
-                                        "vAgarthau",
-                                        children=[Node("vAk"), Node("artha")],
-                                    ),
-                                    Node("iva"),
-                                ],
-                            ),
-                            Node("saMpR^iktau"),
-                            Node(
-                                "vAgarthapratipattaye",
-                                children=[Node("vAgartha"), Node("pratipattaye")],
-                            ),
+                            Node(translit("OM")),
+                            Node(";"),
+                            Node("May", color=LangColor.VERB),
+                            Node("[it]", color=LangColor.GOD),
+                            Node("protect", color=LangColor.VERB),
+                            Node("us both", color=LangColor.YOU),
+                            Node("together", color=LangColor.PARTICLES),
+                            Node("."),
                         ],
+                    ),
+                    Node(
+                        "May the both of us be nourished together.",
+                        children=[
+                            Node("May", color=LangColor.VERB),
+                            Node("the both of us", color=LangColor.YOU),
+                            Node("be nourished", color=LangColor.VERB),
+                            Node("together", color=LangColor.PARTICLES),
+                            Node("."),
+                        ],
+                    ),
+                    Node(
+                        "May we work vigorously together.",
+                        children=[],
                     ),
                 ],
                 [
                     Node(
-                        f"I bow to the two parents of the world, {translit('pArvatI')} and {translit('shiva')}",
+                        "May our study be brilliant.",
+                        children=[],
+                    ),
+                    Node(
+                        "May our study be brilliant.",
+                        children=[],
+                    ),
+                ],
+                [
+                    Node(
+                        f"{translit('OM')}, peace, peace, peace.",
                         children=[
-                            Node("I bow"),
-                            Node("to"),
-                            Node("the two parents", declension=Declension.ACC),
-                            Node("of the world"),
-                            Node("vande"),
-                            Node(
-                                f"{translit('pArvatI')} and {translit('shiva')}",
-                                children=[
-                                    Node(translit("pArvatI"), color=RED),
-                                    Node(translit("shiva"), color=BLUE),
-                                ],
-                                color=PURPLE,
-                            ),
+                            Node(f"{translit('OM')}"),
+                            Node("peace,"),
+                            Node("peace,"),
+                            Node("peace,"),
                         ],
-                    )
+                    ),
                 ],
             ],
         )

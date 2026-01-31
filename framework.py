@@ -191,8 +191,8 @@ class Sloka:
             for sentence in self.sanskrit[i]:
                 line += sentence.typst_code(Language.SANSKRIT)
 
-            for i in range(i + 1):
-                line += "।"
+            # for i in range(i + 1):
+            #     line += "।"
 
             sloka.append(TypstText(line, scale=SCALE))
 

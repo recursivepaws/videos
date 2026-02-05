@@ -158,7 +158,7 @@ class SlokaTime(Timeline):
                 ],
                 [
                     Node(
-                        "May both our study be brilliant;#linebreak()may we both not be hateful.",
+                        "May both our study be brilliant;#linebreak()may we not hate one another.",
                         children=[
                             Node("May", LC.VERB, delay=2),
                             Node("both our", LC.YOU, delay=2),
@@ -166,9 +166,9 @@ class SlokaTime(Timeline):
                             Node("be", LC.VERB, delay=2),
                             Node("brilliant", LC.ADJECTIVES, delay=2),
                             Node(";#linebreak()"),
-                            Node("may we both", LC.VERB, delay=2),
+                            Node("may we", LC.VERB, delay=2),
                             Node("not", LC.PARTICLES, delay=2),
-                            Node("be hateful", LC.VERB, delay=2),
+                            Node("hate one another", LC.VERB, delay=2),
                             Node("."),
                         ],
                     ),

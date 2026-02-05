@@ -10,6 +10,7 @@ from janim.imports import (
     PINK,
     PURPLE,
     RED,
+    TEAL,
     YELLOW,
     Config,
     Timeline,
@@ -18,13 +19,14 @@ from janim.imports import (
 from framework import Declension, Node, Sloka, translit
 
 
-class LangColor(StrEnum):
+class LC(StrEnum):
     GOD = BLUE
     VERB = PINK
     YOU = GREEN
     PARTICLES = ORANGE
     NEGATION = RED
     OBJECTS = YELLOW
+    ADJECTIVES = TEAL
 
 
 # saha nAvavatu . saha nau bhunaktu . saha vIryaM karavAvahai . tejasvi nAvadhItamastu mA vidviShAvahai ..
@@ -38,17 +40,17 @@ class SlokaTime(Timeline):
         sloka = Sloka(
             "",
             sanskrit=[
+                [Node("OM")],
                 [
                     Node(
-                        "OM saha nAvavatu .",
+                        "saha nAvavatu .",
                         children=[
-                            Node("OM"),
-                            Node("saha", color=LangColor.PARTICLES),
+                            Node("saha", color=LC.PARTICLES),
                             Node(
                                 "nAvavatu",
                                 children=[
-                                    Node("nau", color=LangColor.YOU),
-                                    Node("avatu", color=LangColor.VERB),
+                                    Node("nau", color=LC.YOU),
+                                    Node("avatu", color=LC.VERB),
                                 ],
                             ),
                             Node("."),
@@ -57,20 +59,18 @@ class SlokaTime(Timeline):
                     Node(
                         "saha nau bhunaktu .",
                         children=[
-                            Node(
-                                "saha",
-                            ),
-                            Node("nau", color=BLUE),
-                            Node("bhunaktu"),
+                            Node("saha", color=LC.PARTICLES),
+                            Node("nau", color=LC.YOU),
+                            Node("bhunaktu", color=LC.VERB),
                             Node("."),
                         ],
                     ),
                     Node(
                         "saha vIryaM karavAvahai .",
                         children=[
-                            Node("saha"),
-                            Node("vIryaM"),
-                            Node("karavAvahai"),
+                            Node("saha", color=LC.PARTICLES),
+                            Node("vIryam", color=LC.ADJECTIVES),
+                            Node("karavAvahai", color=LC.VERB),
                             Node("."),
                         ],
                     ),
@@ -79,28 +79,29 @@ class SlokaTime(Timeline):
                     Node(
                         "tejasvi nAvadhItamastu mA vidviShAvahai ..",
                         children=[
-                            Node("tejasvi"),
+                            Node("tejasvi", LC.ADJECTIVES),
                             Node(
                                 "nAvadhItamastu",
                                 children=[
-                                    Node("nau"),
-                                    Node("adhItam"),
-                                    Node("astu"),
+                                    Node("nau", LC.YOU),
+                                    Node("adhItam", LC.OBJECTS),
+                                    Node("astu", LC.VERB),
                                 ],
                             ),
-                            Node("mA"),
-                            Node("vidviShAvahai"),
+                            Node(";"),
+                            Node("mA", LC.PARTICLES),
+                            Node("vidviShAvahai", LC.VERB),
                             Node(".."),
                         ],
                     ),
                 ],
                 [
                     Node(
-                        "OM shAntiH shAntiH shAntiH ..",
+                        "OM shAntishshAntishshAntiH ..",
                         children=[
                             Node("OM"),
-                            Node("shAntiH"),
-                            Node("shAntiH"),
+                            Node("shAntish", children=[Node("shAntiH")]),
+                            Node("shAntish", children=[Node("shAntiH")]),
                             Node("shAntiH"),
                             Node(".."),
                         ],
@@ -109,39 +110,53 @@ class SlokaTime(Timeline):
             ],
             # jagataH pitarau vande pArvatIparameshvarau..
             english=[
+                [Node(translit("OM"))],
                 [
                     Node(
-                        f"{translit('OM')}; May [it] protect us both together.",
+                        "May we both be protected together.",
                         children=[
-                            Node(translit("OM")),
-                            Node(";"),
-                            Node("May", color=LangColor.VERB),
-                            Node("[it]", color=LangColor.GOD),
-                            Node("protect", color=LangColor.VERB),
-                            Node("us both", color=LangColor.YOU),
-                            Node("together", color=LangColor.PARTICLES),
+                            Node("May", color=LC.VERB),
+                            Node("we both", color=LC.YOU),
+                            Node("be protected", color=LC.VERB),
+                            Node("together", color=LC.PARTICLES),
                             Node("."),
                         ],
                     ),
                     Node(
-                        "May the both of us be nourished together.",
+                        "May we both be nourished together.",
                         children=[
-                            Node("May", color=LangColor.VERB),
-                            Node("the both of us", color=LangColor.YOU),
-                            Node("be nourished", color=LangColor.VERB),
-                            Node("together", color=LangColor.PARTICLES),
+                            Node("May", color=LC.VERB),
+                            Node("we both", color=LC.YOU),
+                            Node("be nourished", color=LC.VERB),
+                            Node("together", color=LC.PARTICLES),
                             Node("."),
                         ],
                     ),
                     Node(
-                        "May we work vigorously together.",
-                        children=[],
+                        "May we both work vigorously together.",
+                        children=[
+                            Node("May we both work", color=LC.VERB),
+                            Node("vigorously", color=LC.ADJECTIVES),
+                            Node("together", color=LC.PARTICLES),
+                            Node("."),
+                        ],
                     ),
                 ],
                 [
                     Node(
-                        "May our study be brilliant.",
-                        children=[],
+                        "May both our study be brilliant;#linebreak()may we both not be hateful.",
+                        children=[
+                            Node("May", LC.VERB),
+                            Node("both our", LC.YOU),
+                            Node("study", LC.OBJECTS),
+                            Node("be", LC.VERB),
+                            Node("brilliant", LC.ADJECTIVES),
+                            Node(";#linebreak()"),
+                            Node("may we both", LC.VERB),
+                            Node("not", LC.PARTICLES),
+                            Node("be hateful", LC.VERB),
+                            Node("."),
+                        ],
                     ),
                     Node(
                         "May our study be brilliant.",
@@ -153,9 +168,13 @@ class SlokaTime(Timeline):
                         f"{translit('OM')}, peace, peace, peace.",
                         children=[
                             Node(f"{translit('OM')}"),
-                            Node("peace,"),
-                            Node("peace,"),
-                            Node("peace,"),
+                            Node(","),
+                            Node("peace"),
+                            Node(","),
+                            Node("peace"),
+                            Node(","),
+                            Node("peace"),
+                            Node("."),
                         ],
                     ),
                 ],

@@ -26,7 +26,6 @@ from janim.imports import (
     Succession,
     TransformMatchingDiff,
     TypstText,
-    Vect,
     Wait,
     Write,
 )
@@ -75,11 +74,24 @@ class Node:
         color: str = WHITE,
         declension: Declension = Declension.NOP,
         children: List[Node] = [],
+        delay: int = 0,
     ):
-        self.text = text
-        self.color = color
-        self.children = children
-        self.label = f"label{abs(hash(text)) % (10**8)}"
+        if delay > 0:
+            if len(children) > 0:
+                raise ValueError("cannot add color delay when there are children")
+            node = Node(text, color, children=[])
+            for i in range(delay):
+                node = Node(text, children=[node])
+
+            self.text = node.text
+            self.color = node.color
+            self.children = node.children
+            self.label = node.label
+        else:
+            self.text = text
+            self.color = color
+            self.children = children
+            self.label = f"label{abs(hash(text)) % (10**8)}"
 
     # Get the typst code for the text
     def typst_code(self, language: Language):
@@ -118,13 +130,12 @@ class Node:
 
         return strings + roots
 
-    def decompose(self, language: Language, position: Vect):
-        states = [
+    def states(self, language: Language):
+        return [
             (lambda s: TypstText(s, scale=SCALE))(s) for s in self.strings(language)
         ]
-        for i in range(len(states)):
-            states[i].points.move_to(position)
 
+    def decompose_states(self, states: List[TypstText]):
         animations = []
         animations.append(Write(states[0], duration=1.0))
 
@@ -140,10 +151,11 @@ class Node:
                     ),
                 )
             )
+            animations.append(Wait(0.2))
 
         return Succession(
             *animations,
-            Wait(1.4),
+            Wait(1.2),
             FadeOut(states[len(states) - 1], duration=0.5),
         )
 
@@ -191,9 +203,6 @@ class Sloka:
             for sentence in self.sanskrit[i]:
                 line += sentence.typst_code(Language.SANSKRIT)
 
-            # for i in range(i + 1):
-            #     line += "।"
-
             sloka.append(TypstText(line, scale=SCALE))
 
         sloka = Group(*sloka)
@@ -218,15 +227,22 @@ class Sloka:
 
         for i in range(len(self.sanskrit)):
             for j in range(len(self.sanskrit[i])):
+                sa = self.sanskrit[i][j].states(Language.SANSKRIT)
+                ia = self.sanskrit[i][j].states(Language.TRANSLIT)
+                en = self.english[i][j].states(Language.ENGLISH)
+
+                for xi in range(len(sa)):
+                    ia_ref = ia[min(xi, len(ia) - 1)]
+                    ia_ref.points.move_to(ORIGIN)
+                    sa[min(xi, len(sa) - 1)].points.next_to(ia_ref, UP / SCALE * 4.0)
+                    en[min(xi, len(en) - 1)].points.next_to(ia_ref, DOWN / SCALE * 4.0)
+                    # Language.SANSKRIT, ORIGIN + UP / SCALE * 2.0
+
                 animations.append(
                     Aligned(
-                        self.sanskrit[i][j].decompose(
-                            Language.SANSKRIT, ORIGIN + UP / SCALE * 2.0
-                        ),
-                        self.sanskrit[i][j].decompose(Language.TRANSLIT, ORIGIN),
-                        self.english[i][j].decompose(
-                            Language.ENGLISH, ORIGIN + DOWN / SCALE * 2.0
-                        ),
+                        self.sanskrit[i][j].decompose_states(sa),
+                        self.sanskrit[i][j].decompose_states(ia),
+                        self.english[i][j].decompose_states(en),
                     )
                 )
 

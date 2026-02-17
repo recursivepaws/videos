@@ -44,7 +44,6 @@ class SlokaTime(Timeline):
         sloka = Sloka(
             "",
             sanskrit=[
-                [Node("OM", LC.GOD, delay=1)],
                 [
                     Node(
                         "saha nAvavatu .",
@@ -76,9 +75,9 @@ class SlokaTime(Timeline):
                     Node(
                         "saha vIryaM karavAvahai .",
                         children=[
-                            Node("saha", color=LC.PARTICLES, delay=1),
-                            Node("vIryam", color=LC.ADJECTIVES, delay=1),
-                            Node("karavAvahai", color=LC.VERB, delay=1),
+                            Node("saha", LC.PARTICLES, delay=1),
+                            Node("vIryam", LC.ADJECTIVES, delay=1),
+                            Node("karavAvahai", LC.VERB, delay=1),
                             Node("."),
                         ],
                     ),
@@ -124,7 +123,6 @@ class SlokaTime(Timeline):
             ],
             # jagataH pitarau vande pArvatIparameshvarau..
             english=[
-                [Node(translit("OM"), LC.GOD, delay=1)],
                 [
                     Node(
                         "May we both be protected together.",

@@ -10,7 +10,7 @@ from janim.imports import (
     Timeline,
 )
 
-from framework import Declension, LangColor, Node, Sloka, translit
+from framework import Citation, Declension, LangColor, Language, Node, Sloka, translit
 
 # vAgarthAviva saMpR^iktau vAgarthapratipattaye.
 # jagataH pitarau vande pArvatIparameshvarau..
@@ -21,7 +21,7 @@ class SlokaTime(Timeline):
 
     def construct(self):
         sloka = Sloka(
-            "",
+            Citation("", Language.ENGLISH),
             sanskrit=[
                 [
                     Node(

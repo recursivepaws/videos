@@ -6,7 +6,7 @@ from janim.imports import (
     Timeline,
 )
 
-from framework import LangColor, Node, Question, Sloka
+from framework import Citation, LangColor, Language, Node, Question, Sloka
 
 
 class SlokaTime(Timeline):
@@ -16,7 +16,7 @@ class SlokaTime(Timeline):
         self.play(Question("Where can I find God?").ask())
 
         sloka = Sloka(
-            citation="BG 6.30",
+            citation=Citation("BG 6.30", Language.ENGLISH),
             sanskrit=[
                 [
                     Node(

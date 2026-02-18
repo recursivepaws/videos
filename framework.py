@@ -88,10 +88,23 @@ class Node:
             self.children = node.children
             self.label = node.label
         else:
-            self.text = text
-            self.color = color
-            self.children = children
-            self.label = f"label{abs(hash(text)) % (10**8)}"
+            splits = text.split(" ")
+            # If there are spaces
+            if len(splits) > 1 and len(splits) == len(children):
+                print(splits)
+                new_children = []
+                for i in range(len(splits)):
+                    new_children.append(Node(splits[i], color, children=[children[i]]))
+
+                self.text = text
+                self.color = color
+                self.children = new_children
+                self.label = f"label{abs(hash(text)) % (10**8)}"
+            else:
+                self.text = text
+                self.color = color
+                self.children = children
+                self.label = f"label{abs(hash(text)) % (10**8)}"
 
     # Get the typst code for the text
     def typst_code(self, language: Language):
@@ -180,18 +193,27 @@ class Question:
         )
 
 
+class Citation:
+    text: Node
+    lang: Language
+
+    def __init__(self, text: str, lang: Language):
+        self.text = Node(text)
+        self.lang = lang
+
+
 class Sloka:
-    citation: Node
+    citation: Citation
     sanskrit: List[List[Node]]
     english: List[List[Node]]
 
     def __init__(
         self,
-        citation: str,
+        citation: Citation,
         sanskrit: List[List[Node]],
         english: List[List[Node]],
     ):
-        self.citation = Node(citation)
+        self.citation = citation
         self.sanskrit = sanskrit
         self.english = english
 
@@ -213,7 +235,9 @@ class Sloka:
         for line in sloka:
             animations.append(Write(line, duration=6.0))
 
-        citation = TypstText(self.citation.typst_code(Language.ENGLISH), scale=SCALE)
+        citation = TypstText(
+            self.citation.text.typst_code(self.citation.lang), scale=SCALE
+        )
         citation.points.next_to(sloka, DOWN)
 
         animations.append(

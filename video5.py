@@ -63,8 +63,14 @@ class SlokaTime(Timeline):
                                 "sarvavA~Nmayam",
                                 children=[
                                     Node("sarva", LC.YOU, delay=1),
-                                    Node("vAc", LC.PARTICLES, delay=1),
-                                    Node("mayam", LC.OBJECTS, delay=1),
+                                    Node(
+                                        "vA~Nmayam",
+                                        ORANGE,
+                                        children=[
+                                            Node("vAc", YELLOW),
+                                            Node("mayam", RED),
+                                        ],
+                                    ),
                                 ],
                             ),
                             Node("."),
@@ -80,7 +86,7 @@ class SlokaTime(Timeline):
                                 "chandratArAdi",
                                 children=[
                                     Node("chandra", LC.YOU, delay=1),
-                                    Node("tArA", LC.OBJECTS, delay=1),
+                                    Node("tAra", LC.OBJECTS, delay=1),
                                     Node("Adi", LC.PARTICLES, delay=1),
                                 ],
                             ),
@@ -112,15 +118,24 @@ class SlokaTime(Timeline):
                         ],
                     ),
                     Node(
-                        "Whose verbal expression is#linebreak()everything made of speech,",
+                        "Whose verbal expression is#linebreak()all language,",
                         children=[
                             Node("Whose"),
                             Node("verbal expression", LC.ADJECTIVES, delay=3),
                             Node("is"),
                             Node("#linebreak()"),
-                            Node("everything", LC.YOU, delay=3),
-                            Node("made of", LC.PARTICLES, delay=3),
-                            Node("speech", LC.OBJECTS, delay=3),
+                            Node("all", LC.YOU, delay=3),
+                            Node(
+                                "language",
+                                ORANGE,
+                                children=[
+                                    Node("language", ORANGE),
+                                    Node("(", ORANGE),
+                                    Node("made of", RED),
+                                    Node("speech", YELLOW),
+                                    Node(")", ORANGE),
+                                ],
+                            ),
                             Node(","),
                         ],
                     ),
@@ -141,10 +156,9 @@ class SlokaTime(Timeline):
                         ],
                     ),
                     Node(
-                        f"We bow to that pure lord {translit('shiva')}.",
+                        f"We verbally praise that pure lord {translit('shiva')}.",
                         children=[
-                            Node("We bow", LC.VERB, delay=2),
-                            Node("to", delay=2),
+                            Node("We verbally praise", LC.VERB, delay=2),
                             Node("that", LC.YOU, delay=2),
                             Node("pure", LC.ADJECTIVES, delay=2),
                             Node(f"lord {translit('shiva')}", LC.GOD, delay=2),

@@ -77,9 +77,7 @@ class Node:
         delay: int = 0,
     ):
         if delay > 0:
-            if len(children) > 0:
-                raise ValueError("cannot add color delay when there are children")
-            node = Node(text, color, children=[])
+            node = Node(text, color, children=children)
             for i in range(delay):
                 node = Node(text, children=[node])
 

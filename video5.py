@@ -58,11 +58,11 @@ class SlokaTime(Timeline):
                     Node(
                         "vAchikaM sarvavA~Nmayam .",
                         children=[
-                            Node("vAchikam", LC.ADJECTIVES, delay=2),
+                            Node("vAchikam", LC.ADJECTIVES, delay=3),
                             Node(
                                 "sarvavA~Nmayam",
                                 children=[
-                                    Node("sarva", LC.YOU, delay=1),
+                                    Node("sarva", LC.YOU, delay=2),
                                     Node(
                                         "vA~Nmayam",
                                         ORANGE,
@@ -121,13 +121,14 @@ class SlokaTime(Timeline):
                         "Whose verbal expression is#linebreak()all language,",
                         children=[
                             Node("Whose"),
-                            Node("verbal expression", LC.ADJECTIVES, delay=3),
+                            Node("verbal expression", LC.ADJECTIVES, delay=4),
                             Node("is"),
                             Node("#linebreak()"),
-                            Node("all", LC.YOU, delay=3),
+                            Node("all", LC.YOU, delay=4),
                             Node(
                                 "language",
                                 ORANGE,
+                                delay=2,
                                 children=[
                                     Node("language", ORANGE),
                                     Node("(", ORANGE),

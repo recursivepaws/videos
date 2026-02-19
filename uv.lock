@@ -539,6 +539,18 @@ wheels = [
 ]
 
 [[package]]
+name = "parsimonious"
+version = "0.11.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "regex" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/3c/0b/8a3b9f4a4943b56e67247c65e1b0564ec9bf0718b85f3fd9502d70afaf32/parsimonious-0.11.0.tar.gz", hash = "sha256:e080377d98957beec053580d38ae54fcdf7c470fb78670ba4bf8b5f9d5cad2a9", size = 54238, upload-time = "2025-11-12T01:33:48.172Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/f1/a9/a10a10f12e50993b5a3568a1a90fd70b85f83edc451875d312bf60cd39b8/parsimonious-0.11.0-py3-none-any.whl", hash = "sha256:32e3818abf9f05b3b9f3b6d87d128645e30177e91f614d2277d88a0aea98fae2", size = 54351, upload-time = "2025-11-12T01:33:46.652Z" },
+]
+
+[[package]]
 name = "pillow"
 version = "12.1.0"
 source = { registry = "https://pypi.org/simple" }
@@ -1130,6 +1142,7 @@ dependencies = [
     { name = "indic-transliteration" },
     { name = "janim", extra = ["gui"] },
     { name = "manim-devanagari" },
+    { name = "parsimonious" },
 ]
 
 [package.metadata]
@@ -1137,6 +1150,7 @@ requires-dist = [
     { name = "indic-transliteration", specifier = ">=2.3.75" },
     { name = "janim", extras = ["gui"], specifier = ">=4.0.0a7" },
     { name = "manim-devanagari", specifier = ">=0.2.2" },
+    { name = "parsimonious", specifier = ">=0.11.0" },
 ]
 
 [[package]]

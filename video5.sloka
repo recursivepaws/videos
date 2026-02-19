@@ -1,0 +1,79 @@
+=== citation ===
+(abhinayadarpaNe 1) SANSKRIT
+
+=== sanskrit ===
+--- line ---
+"A~NgikaM bhuvanaM yasya" {
+    "A~Ngikam"  @ADJECTIVES +1
+    "bhuvanam"  @OBJECTS +1
+    "yasya"     @YOU +1
+}
+"vAchikaM sarvavA~Nmayam ." {
+    "vAchikam"  @ADJECTIVES +3
+    "sarvavA~Nmayam" {
+        "sarva"     @YOU +2
+        "vA~Nmayam" @ORANGE [COMP] {
+            "vAc"   @YELLOW
+            "mayam" @RED
+        }
+    }
+    "."
+}
+
+--- line ---
+"AhAryaM chandratArAdi" {
+    "AhAryam"       @ADJECTIVES +2
+    "chandratArAdi" {
+        "chandra"   @YOU +1
+        "tAra"      @OBJECTS +1
+        "Adi"       @PARTICLES +1
+    }
+}
+"taM numaH sAttvikaM shivam .." {
+    "tam"       @YOU +1
+    "numaH"     @VERB +1
+    "sAttvikam" @ADJECTIVES +1
+    "shivam"    @GOD +1
+    ".."
+}
+
+=== english ===
+--- line ---
+"Whose bodily expression is the universe," {
+    "Whose"             @YOU +2
+    "bodily expression" @ADJECTIVES +2
+    "is"
+    "the universe"      @OBJECTS +2
+    ","
+}
+"Whose verbal expression is all language," {
+    "Whose"
+    "verbal expression" @ADJECTIVES +4
+    "is"
+    "all"               @YOU +4
+    "language"          @ORANGE [COMP] +2 {
+        "language"  @ORANGE
+        "made of"   @RED
+        "speech"    @YELLOW
+    }
+    ","
+}
+
+--- line ---
+"Whose ornamental expression is the moon, stars, etc." {
+    "Whose"
+    "ornamental expression" @ADJECTIVES +3
+    "is"
+    "the moon"  @YOU +3
+    ","
+    "stars"     @OBJECTS +3
+    ","
+    "etc."      @PARTICLES +3
+}
+"We verbally praise that pure lord shiva." {
+    "We verbally praise"    @VERB +2
+    "that"                  @YOU +2
+    "pure"                  @ADJECTIVES +2
+    "lord shiva"            @GOD +2
+    "."
+}

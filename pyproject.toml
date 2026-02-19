@@ -8,4 +8,5 @@ dependencies = [
   "indic-transliteration>=2.3.75",
   "janim[gui]>=4.0.0a7",
   "manim-devanagari>=0.2.2",
+  "parsimonious>=0.11.0",
 ]

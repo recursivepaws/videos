@@ -39,31 +39,36 @@
 
 === english ===
 --- line ---
-"Whose bodily expression is the universe," {
+"Whose bodily expression is\nthe universe," {
     "Whose"             @YOU +2
     "bodily expression" @ADJECTIVES +2
     "is"
+    "\n"
     "the universe"      @OBJECTS +2
     ","
 }
-"Whose verbal expression is all language," {
+"Whose verbal expression is\nall language," {
     "Whose"
     "verbal expression" @ADJECTIVES +4
     "is"
+    "\n"
     "all"               @YOU +4
     "language"          @ORANGE [COMP] +2 {
         "language"  @ORANGE
+        "(" @ORANGE
         "made of"   @RED
         "speech"    @YELLOW
+        ")" @ORANGE
     }
     ","
 }
 
 --- line ---
-"Whose ornamental expression is the moon, stars, etc." {
+"Whose ornamental expressionis\nthe moon, stars, etc." {
     "Whose"
     "ornamental expression" @ADJECTIVES +3
     "is"
+    "\n"
     "the moon"  @YOU +3
     ","
     "stars"     @OBJECTS +3

@@ -66,6 +66,8 @@ class Node:
         return header
 
     def __post_init__(self):
+        self.text = self.text.replace("\\n", "#linebreak()")
+
         if "#" not in self.color:
             self.color = COLORS[self.color]
 

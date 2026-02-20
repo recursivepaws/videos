@@ -1,0 +1,70 @@
+=== citation ===
+(bhagavadgItAyAM 6.30) SANSKRIT
+
+=== sanskrit ===
+--- line ---
+"yo mAM pashyati sarvatra" {
+    "yo" @YOU
+    "mAm" @GOD
+    "pashyati" @VERB
+    "sarvatra" @OBJECTS
+}
+"sarvaM ca mayi pashyati" {
+    "sarvam" @OBJECTS
+    "ca" @PARTICLES
+    "mayi" @GOD
+    "pashyati" @VERB
+}
+
+--- line ---
+"tasyAhaM na praNashyAmi" {
+    "tasyAhaM" {
+        "tasya" @YOU +1
+        "aham"  @GOD +1
+    }
+    "na" @NEGATION
+    "praNashyAmi" @VERB
+}
+"sa ca me na praNashyati" {
+    "sa" @YOU
+    "ca" @PARTICLES
+    "me" @GOD
+    "na" @NEGATION
+    "praNashyati" @VERB
+}
+
+=== english ===
+--- line ---
+"He who sees me everywhere" +1 {
+    "He who" @YOU
+    "sees" @VERB
+    "me" @GOD
+    "everywhere" @OBJECTS
+}
+"and sees all things in me" +1 {
+    "and" @PARTICLES
+    "sees" @VERB
+    "all things" @OBJECTS
+    "in me" @GOD
+}
+
+--- line ---
+"to him, I am not lost" {
+    "to him, I" +1 {
+        "to him" @YOU
+        ","
+        "I"      @GOD
+    }
+    "am"
+    "not" @NEGATION +1
+    "lost" @VERB +1
+}
+"and he is not lost to me" +1 {
+    "and" @PARTICLES
+    "he" @YOU
+    "is"
+    "not" @NEGATION
+    "lost" @VERB
+    "to me" @GOD
+}
+

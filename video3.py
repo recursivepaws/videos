@@ -20,7 +20,7 @@ import framework
 
 importlib.reload(framework)
 
-from framework import Node, Sloka, translit  # noqa: E402
+from framework import Citation, Language, Node, Sloka, translit  # noqa: E402
 
 
 class LC(StrEnum):
@@ -42,7 +42,7 @@ class SlokaTime(Timeline):
 
     def construct(self):
         sloka = Sloka(
-            "",
+            Citation("", Language.SANSKRIT),
             sanskrit=[
                 [
                     Node(

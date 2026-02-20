@@ -1,0 +1,61 @@
+=== citation ===
+(raghuvaṃśe 1.1) ENGLISH
+
+=== sanskrit ===
+--- line ---
+"vAgarthAviva saMpR^iktau vAgarthapratipattaye" {
+    "vAgarthAviva" {
+        "vAgarthau" {
+            "vAk"
+            "artha"
+        }
+        "iva"
+    }
+    "saMpR^iktau"
+    "vAgarthapratipattaye" {
+        "vAgartha"
+        "pratipattaye"
+    }
+}
+
+--- line ---
+"jagataH pitarau vande pArvatIparameshvarau" {
+    "jagataH"
+    "pitarau"
+    "vande"
+    "pArvaItparameshvarau" {
+        "pArvatI"
+        "parameshvara"
+    }
+}
+
+=== english ===
+--- line ---
+"like a word joined with its meaning, to attain vAgarthAviva saMpR^iktau vAgarthapratipattaye" {
+    "vAgarthAviva" {
+        "vAgarthau" {
+            "vAk"
+            "artha"
+        }
+        "iva"
+    }
+    "saMpR^iktau"
+    "vAgarthapratipattaye" {
+        "vAgartha"
+        "pratipattaye"
+    }
+}
+
+--- line ---
+"I bow to the two parents of the world, \translit{pArvatI} and \translit{shiva}" {
+    "I bow"
+    "to"
+    "the two parents"
+    "of the world"
+    "vande"
+    "\translit{pArvatI} and \translit{shiva}" @PURPLE {
+        "\translit{pArvatI}" @RED
+        "\translit{shiva}"   @BLUE
+    }
+}
+

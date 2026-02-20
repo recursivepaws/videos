@@ -1,6 +1,7 @@
 from __future__ import annotations
 from dataclasses import dataclass, field
 from enum import Enum
+import re
 from typing import List, Optional
 from colors import COLORS
 
@@ -67,6 +68,11 @@ class Node:
 
     def __post_init__(self):
         self.text = self.text.replace("\\n", "#linebreak()")
+        self.text = re.sub(
+            r"\\translit\{([^}]+)\}",
+            lambda m: transliterate(m.group(1), sanscript.ITRANS, sanscript.IAST),
+            self.text,
+        )
 
         if "#" not in self.color:
             self.color = COLORS[self.color]

@@ -13,7 +13,6 @@ from janim.imports import (
     GREEN,
     ORANGE,
     PINK,
-    PURPLE,
     RED,
     WHITE,
     YELLOW,
@@ -55,12 +54,12 @@ def typst_code(text: str, language: Language, color: str = WHITE):
         case Language.TRANSLIT:
             iast = transliterate.process("SLP1", "IAST", text)
             if not iast:
-                raise ValueError(f"Cannot represent {text} in IAST")
+                raise ValueError(f'Cannot represent "{text}" in IAST')
             return Junicode(iast, color)
         case Language.SANSKRIT:
             deva = transliterate.process("SLP1", "DEVANAGARI", text)
             if not deva:
-                raise ValueError(f"Cannot represent {text} in devanagari")
+                raise ValueError(f'Cannot represent "{text}" in devanagari')
 
             return Jaini(deva, color)
 

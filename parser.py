@@ -5,8 +5,8 @@ from enum import Enum
 from typing import Dict, List, NamedTuple, Tuple, Union
 
 from attr.validators import instance_of
-from indic_transliteration import sanscript
-from indic_transliteration.sanscript import transliterate
+from aksharamukha import transliterate
+
 from janim.imports import (
     BLUE,
     DOWN,
@@ -53,10 +53,15 @@ def typst_code(text: str, language: Language, color: str = WHITE):
         case Language.ENGLISH:
             return Junicode(text, color)
         case Language.TRANSLIT:
-            iast = transliterate(text, sanscript.SLP1, sanscript.IAST)
+            iast = transliterate.process("SLP1", "IAST", text)
+            if not iast:
+                raise ValueError(f"Cannot represent {text} in IAST")
             return Junicode(iast, color)
         case Language.SANSKRIT:
-            deva = transliterate(text, sanscript.SLP1, sanscript.DEVANAGARI)
+            deva = transliterate.process("SLP1", "DEVANAGARI", text)
+            if not deva:
+                raise ValueError(f"Cannot represent {text} in devanagari")
+
             return Jaini(deva, color)
 
 
@@ -384,6 +389,7 @@ class SlokaVisitor(NodeVisitor):
 
     def visit_trans_gloss(self, node, visited_children):
         _, content, _ = visited_children
+        print(f"visit_trans_gloss: children: {visited_children}")
         return Gloss(text=content, etymological=False)
 
     def visit_etym_gloss(self, node, visited_children):

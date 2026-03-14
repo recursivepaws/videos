@@ -1,13 +1,22 @@
 from __future__ import annotations
+import collections
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import List, Union
+from typing import Dict, List, NamedTuple, Tuple, Union
 
+from attr.validators import instance_of
 from indic_transliteration import sanscript
 from indic_transliteration.sanscript import transliterate
 from janim.imports import (
+    BLUE,
     DOWN,
+    GREEN,
+    ORANGE,
+    PINK,
+    PURPLE,
+    RED,
     WHITE,
+    YELLOW,
     FadeOut,
     Group,
     Succession,
@@ -145,7 +154,117 @@ class SlokaFile:
                 FadeOut(Group(sloka, citation)),
             )
         )
+
+        colors = [RED, BLUE, YELLOW, GREEN, PINK, ORANGE]
+
+        for line in self.lines:
+            # When doing translation pages we do an utterance at a time rather
+            # than a line at a time.
+            for vAkya in line.vAkyAni:
+                # # for every word in the english translation of the vAkya,
+                # # we want to
+                # vAkya.english.split(" ")
+
+                sanskrit = ""
+                english = ""
+                plain_english = ""
+                color_index = 0
+
+                references: Dict[str, List[Reference]] = {}
+
+                for token in vAkya.tokens:
+                    # sanskrit +=
+                    references |= process_token(vAkya.english, token)
+
+                print("processed token dictionary for this vAkya:")
+                print(references)
+                print("-------------------")
+
+                english_colors: Dict[int, Tuple[str, str]] = {}
+
+                # For each reference
+                for i, [slp1, glosses] in enumerate(references.items()):
+                    color = colors[i % len(colors)]
+
+                    sanskrit += typst_code(slp1, Language.SANSKRIT, color)
+                    sanskrit += " "
+
+                    for gloss in glosses:
+                        english_colors[gloss.gloss_index] = (gloss.english, color)
+
+                # For each gloss sorted by index
+                for gloss_index in collections.OrderedDict(
+                    sorted(english_colors.items())
+                ):
+                    # Add any text that isn't part of a gloss
+                    if gloss_index > len(plain_english):
+                        print(f"gi: {gloss_index}, len pl: ${len(plain_english)}")
+                        missing_text = vAkya.english[len(plain_english) : gloss_index]
+                        plain_english += missing_text
+                        english += missing_text
+                        print(f'to account for discrepancy i added: "{missing_text}"')
+                    #
+                    (ec, color) = english_colors[gloss_index]
+                    english += typst_code(ec, Language.ENGLISH, color)
+                    plain_english += ec
+
+                # print(f"english typst code: {english}")
+                print(f"sanskrit typst code: {sanskrit}")
+                group = Group(
+                    TypstText(english, scale=SCALE), TypstText(sanskrit, scale=SCALE)
+                )
+                group.points.arrange(DOWN)
+
+                animations.append(
+                    Succession(
+                        Wait(2.0),
+                        Write(group, duration=1.0),
+                        Wait(1.0),
+                        FadeOut(group),
+                    )
+                )
+        # reference.
+
         return Succession(*animations)
+
+
+class Reference(NamedTuple):
+    english: str
+    gloss_index: int
+
+
+def process_token(english, token: Union[SimpleToken, CompoundToken, str]):
+    references: Dict[str, List[Reference]] = {}
+    if isinstance(token, SimpleToken):
+        # print(f"simpletoken: {token}")
+        for gloss in token.glosses:
+            gloss_index = english.find(gloss.text)
+            if gloss_index < 0:
+                raise ValueError(
+                    "Gloss cannot reference text not contained in the english translation!"
+                    + "\n"
+                    + f'Tried to find "{gloss.text}" in "{english}" but was unable.'
+                )
+            references.setdefault(token.slp1, []).append(
+                Reference(gloss.text, gloss_index)
+            )
+
+        # print(f"simpletoken gloss references: {references}")
+        return references
+    elif isinstance(token, CompoundToken):
+        # print(f"compoundtoken: {token}")
+        # assume for now that there are no "etymological" glosses and that
+        # compound tokens MUST be recursed in order to reveal full meanings
+        for part in token.parts:
+            # recurse on child tokens
+            references |= process_token(english, part)
+
+        return references
+    else:
+        print(f"strtoken: {token}")
+        # strtokens should only be punctuation which should remain white so we can make this base case and that's fine
+        # references |= process_token(english, SimpleToken(token, [Gloss(token)]))
+        return references
 
 
 # ---------------------------------------------------------------------------
@@ -329,6 +448,5 @@ tejasvi[brilliant]  (nO[both our]+aDItam[study]=nAvaDItam)+astu[May][be]=nAvaDIt
 oM[OM]  SAntiH[peace]+SAntiH[peace]+SAntiH[peace]=SAntiSSAntiSSAntiH  ..
 "OM, peace, peace, peace."
 """
-
     sloka = parse(sample)
     print(sloka)

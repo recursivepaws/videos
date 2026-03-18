@@ -546,33 +546,33 @@ GRAMMAR = Grammar(r"""
 class SlokaVisitor(NodeVisitor):
     # -- top level ----------------------------------------------------------
 
-    def visit_sloka(self, node, visited_children):
+    def visit_sloka(self, _, visited_children):
         _, citation, _, lines, _ = visited_children
         return SlokaFile(citation=citation, lines=list(lines))
 
     # -- citation -----------------------------------------------------------
 
-    def visit_citation_line(self, node, visited_children):
+    def visit_citation_line(self, _, visited_children):
         _, _, text, _, _ = visited_children
         return text
 
-    def visit_citation_text(self, node, visited_children):
+    def visit_citation_text(self, node, _):
         return node.text.strip()
 
     # -- line / verse line --------------------------------------------------
 
-    def visit_line(self, node, visited_children):
+    def visit_line(self, _, visited_children):
         _, _, verse_lines = visited_children
         return Line(vAkyAni=list(verse_lines))
 
-    def visit_verse_line(self, node, visited_children):
+    def visit_verse_line(self, _, visited_children):
         # visited_children: [lookahead, token_seq, ws, quoted_str, ws]
         _, tokens, _, english, _ = visited_children
         return VerseLine(tokens=tokens, english=english)
 
     # -- token sequence -----------------------------------------------------
 
-    def visit_token_seq(self, node, visited_children):
+    def visit_token_seq(self, _, visited_children):
         first, rest = visited_children
         tokens = [first]
         for pair in rest:
@@ -580,60 +580,60 @@ class SlokaVisitor(NodeVisitor):
             tokens.append(pair[1])
         return tokens
 
-    def visit_token(self, node, visited_children):
+    def visit_token(self, _, visited_children):
         return visited_children[0]
 
     # -- compound (sandhi) tokens -------------------------------------------
 
-    def visit_compound_token(self, node, visited_children):
+    def visit_compound_token(self, _, visited_children):
         first_part, plus_parts, _, surface = visited_children
         parts = [first_part] + list(plus_parts)
         return CompoundToken(parts=parts, slp1=surface)
 
-    def visit_plus_part(self, node, visited_children):
+    def visit_plus_part(self, _, visited_children):
         _, part = visited_children
         return part
 
-    def visit_comp_part(self, node, visited_children):
+    def visit_comp_part(self, _, visited_children):
         return visited_children[0]
 
-    def visit_paren_compound(self, node, visited_children):
+    def visit_paren_compound(self, _, visited_children):
         _, compound, _ = visited_children
         return compound
 
     # -- simple tokens & glosses --------------------------------------------
 
-    def visit_simple_token(self, node, visited_children):
+    def visit_simple_token(self, _, visited_children):
         slp1, glosses = visited_children
         return SimpleToken(slp1=slp1, glosses=list(glosses))
 
-    def visit_gloss(self, node, visited_children):
+    def visit_gloss(self, _, visited_children):
         return visited_children[0]
 
-    def visit_trans_gloss(self, node, visited_children):
+    def visit_trans_gloss(self, _, visited_children):
         _, content, _ = visited_children
         print(f"visit_trans_gloss: children: {visited_children}")
         return Gloss(text=content, etymological=False)
 
-    def visit_etym_gloss(self, node, visited_children):
+    def visit_etym_gloss(self, _, visited_children):
         _, content, _ = visited_children
         return Gloss(text=content, etymological=True)
 
-    def visit_trans_content(self, node, visited_children):
+    def visit_trans_content(self, node, _):
         return node.text
 
-    def visit_etym_content(self, node, visited_children):
+    def visit_etym_content(self, node, _):
         return node.text
 
     # -- terminals ----------------------------------------------------------
 
-    def visit_punct(self, node, visited_children):
+    def visit_punct(self, node, _):
         return node.text
 
-    def visit_slp1(self, node, visited_children):
+    def visit_slp1(self, node, _):
         return node.text
 
-    def visit_quoted_str(self, node, visited_children):
+    def visit_quoted_str(self, node, _):
         return node.text[1:-1].replace('\\"', '"').replace("\\\\", "\\")
 
     def generic_visit(self, node, visited_children):

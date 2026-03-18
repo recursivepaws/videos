@@ -242,16 +242,15 @@ class SlokaFile:
                     for [start, end], color in sorted(
                         all_tuples, key=lambda item: item[0]
                     ):
-                        # if start < cursor:  # skip duplicates / overlaps
-                        #     continue
                         if start > cursor:
                             missing_text = vAkya.english[cursor:start]
                             plain_english += missing_text
-                            english += missing_text
+                            english += typst_code(missing_text, Language.ENGLISH, WHITE)
                         plain_english += vAkya.english[start:end]
                         english += typst_code(
                             vAkya.english[start:end], Language.ENGLISH, color
                         )
+
                         cursor = end
 
                     states[0].append(TypstText(sanskrit, scale=SCALE))

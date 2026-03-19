@@ -222,7 +222,6 @@ class SlokaFile:
                     english = ""
                     plain_english = ""
 
-                    print(f"\nframe: {frame}\n\n")
                     for token in frame:
                         sanskrit += (
                             typst_code(token.slp1, Language.SANSKRIT, token.color) + " "
@@ -256,10 +255,6 @@ class SlokaFile:
                     states[0].append(TypstText(sanskrit, scale=SCALE))
                     states[1].append(TypstText(translit, scale=SCALE))
                     states[2].append(TypstText(english, scale=SCALE))
-
-                print("states:\n")
-                print((t.text for s in states for t in s))
-                print("\n")
 
                 for i in range(len(states[0])):
                     # Start the transliteration in the center
@@ -530,7 +525,7 @@ GRAMMAR = Grammar(r"""
     citation_text   = ~r"[^=]+"
 
     line            = "--- line ---" ws verse_line+
-    verse_line      = !"--- line ---" token_seq ws quoted_str ws
+    verse_line      = !"--- line ---" token_seq ws quoted_str (ws quoted_str)* ws
 
     token_seq       = token (ws token)*
 
@@ -590,8 +585,10 @@ class SlokaVisitor(NodeVisitor):
         return Line(vAkyAni=list(verse_lines))
 
     def visit_verse_line(self, _, visited_children):
-        # visited_children: [lookahead, token_seq, ws, quoted_str, ws]
-        _, tokens, _, english, _ = visited_children
+        # visited_children: [lookahead, token_seq, ws, first_quoted_str, rest_quoted_strs, ws]
+        _, tokens, _, first, rest, _ = visited_children
+        extra = [pair[1] for pair in rest]
+        english = "#linebreak()".join([first] + extra)
         return VerseLine(tokens=tokens, english=english)
 
     # -- token sequence -----------------------------------------------------
@@ -636,7 +633,6 @@ class SlokaVisitor(NodeVisitor):
 
     def visit_trans_gloss(self, _, visited_children):
         _, content, _ = visited_children
-        print(f"visit_trans_gloss: children: {visited_children}")
         return Gloss(text=content, etymological=False)
 
     def visit_etym_gloss(self, _, visited_children):

@@ -1,103 +1,20 @@
-=== citation ===
-(taittirIyopaniSade 2.2.2) SANSKRIT
-
-=== sanskrit ===
---- line ---
-"saha nAvavatu ." {
-    "saha"      @PARTICLES +2
-    "nAvavatu" @ORANGE +1 {
-        "nau"   @RED +1
-        "avatu" @YELLOW +1
-    }
-    "." +1
-}
-"saha nau bhunaktu ." {
-    "saha"      @PARTICLES
-    "nau"       @YOU
-    "bhunaktu"  @VERB
-    "."
-}
-"saha vIryaM karavAvahai ." {
-    "saha"          @PARTICLES +1
-    "vIryam"        @ADJECTIVES +1
-    "karavAvahai"   @VERB +1
-    "."
-}
+=== tEttirIyopanizade 2.2.2 ===
 
 --- line ---
-"tejasvi nAvadhItamastu mA vidviShAvahai .." {
-    "tejasvi"           @ADJECTIVES +2
-    "nAvadhItamastu" {
-        "nau"       @YOU +1
-        "adhItam"   @OBJECTS +1
-        "astu"      @VERB +1
-    }
-    ";"
-    "mA"                @PARTICLES +2
-    "vidviShAvahai"     @VERB +2
-    ".."
-}
+sa\_ha[together]  nO[we both]+avatu[May][be protected]=nA\'vavatu  .
+"May we both be protected together."
+
+sa\_ha[together]  nO\'[we both]  Bunaktu[May][be nourished]  .
+"May we both be nourished together."
+
+sa\_ha[together]  vI\_rya\'M[vigorously]  karavAvahE[May we both work]  .
+"May we both work vigorously together."
 
 --- line ---
-"OM shAntishshAntishshAntiH .." {
-    "OM"        @GOD +2
-    "shAntish" {
-        "shAntiH"   @OBJECTS +1
-    }
-    "shAntish" {
-        "shAntiH"   @OBJECTS +1
-    }
-    "shAntiH"   @OBJECTS +2
-    ".."
-}
-
-=== english ===
---- line ---
-"May we both be protected together." {
-    "May"           @VERB +3
-    "we both"       @YOU +3
-    "be protected"  @VERB +3
-    "together"      @PARTICLES +3
-    "."
-}
-"May we both be nourished together." {
-    "May"           @VERB +1
-    "we both"       @YOU +1
-    "be nourished"  @VERB +1
-    "together"      @PARTICLES +1
-    "."
-}
-"May we both work vigorously together." {
-    "May we both work"  @VERB +1
-    "vigorously"        @ADJECTIVES +1
-    "together"          @PARTICLES +1
-    "."
-}
+te\_ja\_svi[brilliant]  (nO[both our]+aDItam[study]=nAvaDItam)+astu[May][be]=nA\_vaDI\'tamastu\_ mA[not]  vi\'dvizA\_vahE\'\'[hate one another]  ..
+"May both our study be brilliant;"
+"may we not hate one another."
 
 --- line ---
-"May both our study be brilliant;\nmay we not hate one another." {
-    "May"           @VERB +2
-    "both our"      @YOU +2
-    "study"         @OBJECTS +2
-    "be"            @VERB +2
-    "brilliant"     @ADJECTIVES +2
-    ";"
-    "\n"
-    "may we"        @VERB +2
-    "not"           @PARTICLES +2
-    "hate one another" @VERB +2
-    "."
-}
-
---- line ---
-"OM, peace, peace, peace." {
-    "OM"    @GOD +2
-    ","
-    "peace" @OBJECTS +2
-    ","
-    "peace" @OBJECTS +2
-    ","
-    "peace" @OBJECTS +2
-    "."
-}
-
+oM[OM] SAntiH\_[peace] SAntiH\_[peace] SAntiH\'[peace]  ..
+"OM, peace, peace, peace."

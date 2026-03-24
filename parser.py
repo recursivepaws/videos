@@ -37,18 +37,52 @@ SCALE = 2.0
 # ---------------------------------------------------------------------------
 
 
+class LenientTransformMatchingDiff(TransformMatchingDiff):
+    @dataclass
+    class MatchWrapper(TransformMatchingDiff.MatchWrapper):
+        def __eq__(self, other):
+            if not isinstance(other, LenientTransformMatchingDiff.MatchWrapper):
+                return False
+            return self.item.points.same_shape(other.item)
+
+        def __hash__(self):
+            return 0  # forces __eq__ comparison for all pairs
+
+
+# def tbox(text: str):
+#     return f"#box[#text[{text}]]"
+
+
 def Junicode(text: str, color: str):
-    return f'#text(font: "Junicode", stroke: none, fill: rgb("{color}"))[{text}]'
+    return f'#box[#text(font: "Junicode", stroke: none, fill: rgb("{color}"))[{text}]]'
 
 
 def Jaini(text: str, color: str):
-    return f'#text(font: "Jaini", stroke: none, fill: rgb("{color}"))[{text}]'
+    return f'#box[#text(font: "Jaini", stroke: none, fill: rgb("{color}"))[{text}]]'
 
 
 class Language(Enum):
     ENGLISH = "english"
     SANSKRIT = "sanskrit"
     TRANSLIT = "translit"
+
+
+TYPST_CMD_RE = re.compile(r"(#\w+\(\))")
+
+
+def typst_code_safe(text: str, language: Language, color: str = WHITE) -> str:
+    """Like typst_code, but splits out any embedded #foo() commands so they
+    are never trapped inside a #box[#text[...]]."""
+    parts = TYPST_CMD_RE.split(text)  # alternates: plain text, cmd, plain text, ...
+    result = ""
+    for part in parts:
+        if not part:
+            continue
+        if TYPST_CMD_RE.fullmatch(part):
+            result += part  # emit the command bare, e.g. #linebreak()
+        else:
+            result += typst_code(part, language, color)
+    return result
 
 
 def typst_code(text: str, language: Language, color: str = WHITE):
@@ -219,7 +253,6 @@ class SlokaFile:
                     sanskrit = ""
                     translit = ""
                     english = ""
-                    plain_english = ""
 
                     for token in frame:
                         sanskrit += (
@@ -237,23 +270,41 @@ class SlokaFile:
                     all_tuples.append(((len(vAkya.english), len(vAkya.english)), WHITE))
 
                     cursor = 0
+                    plain_english = 0
                     for [start, end], color in sorted(
                         all_tuples, key=lambda item: item[0]
                     ):
                         if start > cursor:
                             missing_text = vAkya.english[cursor:start]
-                            plain_english += missing_text
-                            english += typst_code(missing_text, Language.ENGLISH, WHITE)
-                        plain_english += vAkya.english[start:end]
-                        english += typst_code(
-                            vAkya.english[start:end], Language.ENGLISH, color
-                        )
+                            plain_english += len(missing_text)
+                            for x in (
+                                missing_text.split()
+                            ):  # split() handles all whitespace, no empty strings
+                                english += (
+                                    typst_code_safe(x, Language.ENGLISH, WHITE) + " "
+                                )
+                        if start == end:
+                            break
+
+                        english_token = vAkya.english[start:end]
+                        plain_english += len(english_token)
+                        english += typst_code(english_token, Language.ENGLISH, color)
+                        cursor = end
+
+                        # If the character right after this span is a space, consume it and emit a separator.
+                        # This prevents the space from being silently dropped by split(" ") → ["", ""].
+                        if cursor < len(vAkya.english) and vAkya.english[cursor] == " ":
+                            english += " "
+                            cursor += 1
 
                         cursor = end
 
                     states[0].append(TypstText(sanskrit, scale=SCALE))
                     states[1].append(TypstText(translit, scale=SCALE))
                     states[2].append(TypstText(english, scale=SCALE))
+
+                for s in states[2]:
+                    print(s.text)
 
                 for i in range(len(states[0])):
                     # Start the transliteration in the center
@@ -288,9 +339,9 @@ class SlokaFile:
                         long = node_count_changed or not colors_changed
                         duration = 0.8 if long else 0.25
 
-                        transformation: List[TransformMatchingDiff] = [
+                        transformation = [
                             *(
-                                TransformMatchingDiff(
+                                LenientTransformMatchingDiff(
                                     s[i - 1],
                                     s[i],
                                     duration=duration,

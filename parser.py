@@ -357,7 +357,7 @@ class SlokaFile:
                                 "I don't know what kind of change occurred"
                             )
 
-                print(state_changes)
+                print([*((lambda c: c.value)(s) for s in state_changes)])
 
                 for i, frame in enumerate(frames):
                     sanskrit = ""

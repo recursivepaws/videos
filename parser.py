@@ -22,6 +22,7 @@ from janim.imports import (
     GrowFromEdge,
     ShrinkToEdge,
     Succession,
+    SupportsAnim,
     TransformMatchingDiff,
     TypstText,
     Wait,
@@ -255,12 +256,26 @@ class AnimationChange(Enum):
     EXPAND = "Expansion"
 
 
+class NiruktaFile:
+    def teach(self) -> Succession:
+        return Succession()
+
+
 @dataclass
-class SlokaFile:
+class SutraFile(NiruktaFile):
+    citation: str
+    slokas: List[List[Line]]
+
+    def teach(self) -> Succession:
+        return Succession(Write(TypstText(self.citation)))
+
+
+@dataclass
+class SlokaFile(NiruktaFile):
     citation: str
     lines: List[Line]
 
-    def teach(self):
+    def teach(self) -> Succession:
         sloka = []
 
         for line in self.lines:
@@ -716,7 +731,7 @@ def build_display_token(
 # Grammar
 # ---------------------------------------------------------------------------
 
-GRAMMAR = Grammar(r"""
+SLOKA_GRAMMAR_STR = r"""
     sloka           = ws citation_line ws line+ ws
 
     citation_line   = "===" ws citation_text ws "==="
@@ -752,8 +767,20 @@ GRAMMAR = Grammar(r"""
 
     quoted_str      = '"' ~r'(?:[^"\\]|\\.)*' '"'
     ws              = ~r"\s*"
-""")
+"""
 
+
+SUTRA_GRAMMAR_STR = (
+    r"""
+    sutra           = sloka inline_sloka* ws
+    inline_sloka    = ws "=== sloka ===" ws line+ ws
+"""
+    + "\n"
+    + SLOKA_GRAMMAR_STR
+)
+
+SLOKA_GRAMMAR = Grammar(SLOKA_GRAMMAR_STR)
+SUTRA_GRAMMAR = Grammar(SUTRA_GRAMMAR_STR)
 
 # ---------------------------------------------------------------------------
 # Visitor
@@ -858,14 +885,37 @@ class SlokaVisitor(NodeVisitor):
         return visited_children or node
 
 
+class SutraVisitor(SlokaVisitor):
+    def visit_sutra(self, _, visited_children):
+        first, rest, _ = visited_children
+        citation = first[0]
+        slokas = [first[1], *(s[1] for s in rest)]
+
+        return SutraFile(citation, slokas)
+
+    def visit_inline_sloka(self, _, visited_children):
+        _, _, _, lines, _ = visited_children
+        return lines
+
+    def visit_sloka(self, _, visited_children):
+        _, citation, _, lines, _ = visited_children
+        return [citation, lines]
+
+
 # ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
 
 
-def parse(source: str) -> SlokaFile:
+def parse_sutra(source: str) -> SutraFile:
+    """Parse a sutra source string and return a Sutra object."""
+    tree = SUTRA_GRAMMAR.parse(source)
+    return SutraVisitor().visit(tree)
+
+
+def parse_sloka(source: str) -> SlokaFile:
     """Parse a sloka source string and return a Sloka object."""
-    tree = GRAMMAR.parse(source)
+    tree = SLOKA_GRAMMAR.parse(source)
     return SlokaVisitor().visit(tree)
 
 
@@ -895,5 +945,5 @@ tejasvi[brilliant]  (nO[both our]+aDItam[study]=nAvaDItam)+astu[May][be]=nAvaDIt
 oM[OM]  SAntiH[peace]+SAntiH[peace]+SAntiH[peace]=SAntiSSAntiSSAntiH  ..
 "OM, peace, peace, peace."
 """
-    sloka = parse(sample)
+    sloka = parse_sloka(sample)
     print(sloka)

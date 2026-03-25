@@ -411,8 +411,12 @@ class SlokaFile:
                         long = node_count_changed or not colors_changed
                         duration = 0.99 if long else 0.33
 
+                        delay = duration * 0.15
+
                         mismatch = (
-                            lambda item, p, **kwargs: ShrinkToEdge(item, UP, **kwargs),
+                            lambda item, p, **kwargs: ShrinkToEdge(
+                                item, UP, at=delay, **kwargs
+                            ),
                             lambda item, p, **kwargs: GrowFromEdge(
                                 item, DOWN, **kwargs
                             ),

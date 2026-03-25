@@ -80,6 +80,11 @@ def text_box(text: str, color: str):
         return f'#box[#text(fill: rgb("{color}"))[{text}]]'
 
 
+INTRO_FONT = "Jaini"
+SANSKRIT_FONT = "Tiro Devanagari Sanskrit"
+LATIN_FONT = "Junicode"
+
+
 def set_font(text: str, font: str):
     return f'#set text(font: "{font}", stroke: none)\n{text}'
 
@@ -257,7 +262,7 @@ class SlokaFile:
 
             sloka.append(
                 TypstText(
-                    set_font(typst_code(sanskrit, Language.SANSKRIT), "Jaini"),
+                    set_font(typst_code(sanskrit, Language.SANSKRIT), INTRO_FONT),
                     scale=SCALE,
                 )
             )
@@ -269,7 +274,8 @@ class SlokaFile:
             animations.append(Write(line, duration=4.0))
 
         citation = TypstText(
-            set_font(typst_code(self.citation, Language.SANSKRIT), "Jaini"), scale=SCALE
+            set_font(typst_code(self.citation, Language.SANSKRIT), INTRO_FONT),
+            scale=SCALE,
         )
         citation.points.next_to(sloka, DOWN)
 
@@ -366,17 +372,17 @@ class SlokaFile:
                             cursor += 1
 
                     states[0].append(
-                        TypstText(set_font(sanskrit, "Jaini"), scale=SCALE)
+                        TypstText(set_font(sanskrit, SANSKRIT_FONT), scale=SCALE)
                     )
                     states[1].append(
-                        TypstText(set_font(translit, "Junicode"), scale=SCALE)
+                        TypstText(set_font(translit, LATIN_FONT), scale=SCALE)
                     )
                     states[2].append(
-                        TypstText(set_font(english, "Junicode"), scale=SCALE)
+                        TypstText(set_font(english, LATIN_FONT), scale=SCALE)
                     )
 
-                for s in states[1]:
-                    print(s.text)
+                # for s in states[1]:
+                #     print(s.text)
 
                 for i in range(len(states[0])):
                     # Start the transliteration in the center

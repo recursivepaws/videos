@@ -2,10 +2,16 @@ import importlib
 from janim.imports import Config, Timeline
 import glob
 import os
+
+import typst
+import janim.utils.typst_compile as tc
 import parser
 from parser import parse, SlokaFile
 
 importlib.reload(parser)
+
+font_dir = os.path.join(os.path.dirname(__file__), "fonts")
+tc._typst_fonts = typst.Fonts(True, True, [font_dir])
 
 
 def get_sloka_file() -> str:

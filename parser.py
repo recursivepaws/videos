@@ -72,6 +72,11 @@ class LenientTransformMatchingDiff(TransformMatchingDiff):
         def __hash__(self):
             return 0
 
+    def __init__(self, *args, name=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        if name is not None:
+            self.name = name
+
 
 def text_box(text: str, color: str):
     if color == "#FFFFFF":
@@ -239,6 +244,17 @@ def extract_rgb_values(s):
     return "".join(re.findall(r'rgb\("(#[0-9A-Fa-f]{6})"\)', s))
 
 
+class AnimationChange(Enum):
+    # Swara removal
+    SWARAS = "Swara"
+    # Other spelling changes
+    SPELLS = "Spelling"
+    # Color changes only
+    COLORS = "Colors"
+    # Node quantity changes
+    EXPAND = "Expansion"
+
+
 @dataclass
 class SlokaFile:
     citation: str
@@ -310,6 +326,38 @@ class SlokaFile:
 
                 # sa, tr, en
                 states = [[], [], []]
+                state_changes = []
+
+                for i in range(len(frames) - 1):
+                    # compare this frame to the next frame
+                    a = frames[i]
+                    b = frames[i + 1]
+
+                    if len(a) != len(b):
+                        state_changes.append(AnimationChange.EXPAND)
+                    else:
+                        swara_removal = False
+                        spelling_intact = True
+                        color_intact = True
+                        for j in range(len(a)):
+                            swara_removal |= (
+                                unswara(a[j].slp1) != a[j].slp1
+                                and unswara(a[j].slp1) == b[j].slp1
+                            )
+                            spelling_intact &= a[j].slp1 == b[j].slp1
+                            color_intact &= a[j].color == b[j].color
+                        if swara_removal:
+                            state_changes.append(AnimationChange.SWARAS)
+                        elif not spelling_intact:
+                            state_changes.append(AnimationChange.SPELLS)
+                        elif not color_intact:
+                            state_changes.append(AnimationChange.COLORS)
+                        else:
+                            raise ValueError(
+                                "I don't know what kind of change occurred"
+                            )
+
+                print(state_changes)
 
                 for i, frame in enumerate(frames):
                     sanskrit = ""
@@ -407,42 +455,60 @@ class SlokaFile:
 
                     # Transformation into current state
                     if i > 0:
-                        node_count_changed = states[0][i - 1].text.count(
-                            "#text"
-                        ) != states[0][i].text.count("#text")
-                        colors_changed = extract_rgb_values(
-                            states[0][i - 1].text
-                        ) != extract_rgb_values(states[0][i].text)
+                        change_type = state_changes[i - 1]
 
-                        long = node_count_changed or not colors_changed
-                        duration = 0.99 if long else 0.33
+                        assert isinstance(change_type, AnimationChange), (
+                            "Invalid Change Type"
+                        )
+
+                        match change_type:
+                            case AnimationChange.COLORS:
+                                duration = 0.33
+                            case AnimationChange.SWARAS:
+                                duration = 0.44
+                            case AnimationChange.SPELLS:
+                                duration = 0.66
+                            case AnimationChange.EXPAND:
+                                duration = 0.99
 
                         delay = duration * 0.15
 
-                        mismatch = (
-                            lambda item, p, **kwargs: ShrinkToEdge(
-                                item, UP, at=delay, **kwargs
-                            ),
-                            lambda item, p, **kwargs: GrowFromEdge(
-                                item, DOWN, **kwargs
-                            ),
+                        # Swara removals get a special animation for optimal seamlessness
+                        if change_type == AnimationChange.SWARAS:
+                            mismatch = (
+                                lambda item, p, **kwargs: FadeOut(
+                                    item, at=delay, shift=UP * 0.1, **kwargs
+                                ),
+                                lambda item, p, **kwargs: GrowFromEdge(
+                                    item, DOWN, **kwargs
+                                ),
+                            )
+                        else:
+                            mismatch = (
+                                lambda item, p, **kwargs: ShrinkToEdge(
+                                    item, UP, at=delay, **kwargs
+                                ),
+                                lambda item, p, **kwargs: GrowFromEdge(
+                                    item, DOWN, **kwargs
+                                ),
+                            )
+
+                        animations.append(
+                            Aligned(
+                                *(
+                                    LenientTransformMatchingDiff(
+                                        s[i - 1],
+                                        s[i],
+                                        duration=duration,
+                                        mismatch=mismatch,  # type: ignore[arg-type]
+                                        name=str(change_type.value),
+                                    )
+                                    for s in states
+                                ),
+                            )
                         )
 
-                        transformation = [
-                            *(
-                                LenientTransformMatchingDiff(
-                                    s[i - 1],
-                                    s[i],
-                                    duration=duration,
-                                    mismatch=mismatch,  # type: ignore[arg-type]
-                                )
-                                for s in states
-                            ),
-                        ]
-
-                        animations.append(Aligned(*transformation))
-
-                        if not long:
+                        if change_type == AnimationChange.COLORS:
                             animations.append(Wait(0.25))
 
                 animations.append(

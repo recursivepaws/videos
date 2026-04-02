@@ -7,7 +7,7 @@ import typst
 import janim.utils.typst_compile as tc
 import parser
 
-from parser import NiruktaFile, SutraFile, parse_sloka, SlokaFile, parse_sutra
+from parser import SutraFile, parse_sloka, SlokaFile, parse_sutra
 
 importlib.reload(parser)
 
@@ -82,5 +82,5 @@ class SlokaTime(Timeline):
     CONFIG = Config(fps=60)
 
     def construct(self):
-        self.play(nirukta.teach())
-        self.forward()
+        animation = nirukta.build().to_item().show()
+        self.forward_to(animation.end)

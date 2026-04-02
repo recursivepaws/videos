@@ -9,10 +9,12 @@ from janim.imports import (
     BLUE,
     DOWN,
     GREEN,
+    MAROON,
     ORANGE,
     ORIGIN,
     PINK,
     RED,
+    TEAL,
     UP,
     WHITE,
     YELLOW,
@@ -22,6 +24,7 @@ from janim.imports import (
     GrowFromEdge,
     ShrinkToEdge,
     Succession,
+    Timeline,
     TransformMatchingDiff,
     TypstText,
     Wait,
@@ -33,8 +36,8 @@ from janim.typing import SupportsAnim
 from parsimonious.grammar import Grammar
 from parsimonious.nodes import NodeVisitor
 
-SCALE = 2.0
-COLORS = [RED, BLUE, YELLOW, GREEN, PINK, ORANGE]
+SCALE = 1.4
+COLORS = [RED, BLUE, YELLOW, GREEN, PINK, ORANGE, TEAL, MAROON]
 
 
 # ---------------------------------------------------------------------------
@@ -93,7 +96,7 @@ LATIN_FONT = "Junicode"
 
 
 def set_font(text: str, font: str):
-    return f'#set text(font: "{font}", stroke: none)\n{text}'
+    return f'#set text(font: "{font}", stroke: none)\n#set page(width: {200 * SCALE}pt)\n{text}'
 
 
 class Language(Enum):
@@ -248,9 +251,32 @@ class Sloka:
 
     lines: List[Line]
 
-    def render_intro(
-        self, line_duration=4.0, citation: Optional[str] = None
-    ) -> List[SupportsAnim]:
+
+def extract_rgb_values(s):
+    return "".join(re.findall(r'rgb\("(#[0-9A-Fa-f]{6})"\)', s))
+
+
+class AnimationChange(Enum):
+    # Swara removal
+    SWARAS = "Swara"
+    # Other spelling changes
+    SPELLS = "Spelling"
+    # Color changes only
+    COLORS = "Colors"
+    # Node quantity changes
+    EXPAND = "Expansion"
+
+
+class IntroduceSloka(Timeline):
+    lines: List[Line]
+    citation: Optional[str]
+
+    def __init__(self, lines: List[Line], citation: Optional[str] = None):
+        super().__init__()
+        self.lines = lines
+        self.citation = citation
+
+    def construct(self):
         sloka = []
 
         for line in self.lines:
@@ -276,11 +302,11 @@ class Sloka:
 
         animations = []
         for line in sloka:
-            animations.append(Write(line, duration=line_duration))
+            animations.append(Write(line, duration=4.0))
 
-        if citation is not None:
+        if self.citation is not None:
             citation_text = TypstText(
-                set_font(typst_code(citation, Language.SANSKRIT), INTRO_FONT),
+                set_font(typst_code(self.citation, Language.SANSKRIT), INTRO_FONT),
                 scale=SCALE,
             )
             citation_text.points.next_to(sloka, DOWN)
@@ -299,248 +325,244 @@ class Sloka:
                     FadeOut(sloka),
                 ]
             )
-        return animations
+        self.play(Succession(*animations))
 
-    def explain(self) -> List[SupportsAnim]:
+
+class ExplainLine(Timeline):
+    line: Line
+
+    def __init__(self, line: Line):
+        super().__init__()
+        self.line = line
+
+    def construct(self):
+        line_animations = []
+        # When doing translation pages we do an utterance at a time rather
+        # than a line at a time.
+        for vAkya in self.line.vAkyAni:
+            refs: List[tuple[str, List[tuple[int, int]]]] = []
+
+            visited = set()
+            for token in vAkya.tokens:
+                refs += process_token(vAkya.english, token, visited)
+
+            visited = set()
+            colorings = build_colorings(vAkya.tokens, COLORS)
+            display_tokens = [
+                build_display_token(vAkya.english, token, visited, colorings)
+                for token in vAkya.tokens
+            ]
+            frames = frames_for_vakya(display_tokens)
+
+            # sa, tr, en
+            states = [[], [], []]
+            state_changes = []
+
+            for i in range(len(frames) - 1):
+                # compare this frame to the next frame
+                a = frames[i]
+                b = frames[i + 1]
+
+                if len(a) != len(b):
+                    state_changes.append(AnimationChange.EXPAND)
+                else:
+                    swara_removal = False
+                    spelling_intact = True
+                    color_intact = True
+                    for j in range(len(a)):
+                        swara_removal |= (
+                            unswara(a[j].slp1) != a[j].slp1
+                            and unswara(a[j].slp1) == b[j].slp1
+                        )
+                        spelling_intact &= a[j].slp1 == b[j].slp1
+                        color_intact &= a[j].color == b[j].color
+                    if swara_removal:
+                        state_changes.append(AnimationChange.SWARAS)
+                    elif not spelling_intact:
+                        state_changes.append(AnimationChange.SPELLS)
+                    elif not color_intact:
+                        state_changes.append(AnimationChange.COLORS)
+                    else:
+                        raise ValueError("I don't know what kind of change occurred")
+
+            print([*((lambda c: c.value)(s) for s in state_changes)])
+
+            for i, frame in enumerate(frames):
+                sanskrit = ""
+                translit = ""
+                english = ""
+
+                for token in frame:
+                    sanskrit += (
+                        typst_code(token.slp1, Language.SANSKRIT, token.color) + " "
+                    )
+                    iast = transform_text(token.slp1, Language.TRANSLIT)
+                    translit += Junicode_translit(iast, token.color) + " "
+
+                all_tuples = [
+                    ((start, end), token.color)
+                    for token in frame
+                    for start, end in token.english_spans
+                ]
+                all_tuples.append(((len(vAkya.english), len(vAkya.english)), WHITE))
+
+                cursor = 0
+                plain_english = 0
+                for [start, end], color in sorted(all_tuples, key=lambda item: item[0]):
+                    # Emit any unspanned text before this span
+                    if start > cursor:
+                        missing_text = vAkya.english[cursor:start]
+                        plain_english += len(missing_text)
+                        for m in MISSING_CHUNK_RE.finditer(missing_text):
+                            piece = m.group()
+                            if TYPST_CMD_RE.fullmatch(piece):
+                                english += piece
+                            else:
+                                english += typst_code(piece, Language.ENGLISH, WHITE)
+                                # Only add a space if the original text has a space right after this piece
+                                next_pos = m.end()
+                                if (
+                                    next_pos < len(missing_text)
+                                    and missing_text[next_pos] == " "
+                                ):
+                                    english += " "
+
+                    if start == end:
+                        break
+
+                    # Emit the colored span
+                    english_token = vAkya.english[start:end]
+                    plain_english += len(english_token)
+                    english += typst_code_safe(english_token, Language.ENGLISH, color)
+                    cursor = end
+
+                    # Consume a trailing space so missing_text never starts with one
+                    if cursor < len(vAkya.english) and vAkya.english[cursor] == " ":
+                        english += " "
+                        cursor += 1
+
+                states[0].append(
+                    TypstText(set_font(sanskrit, SANSKRIT_FONT), scale=SCALE)
+                )
+                states[1].append(TypstText(set_font(translit, LATIN_FONT), scale=SCALE))
+                states[2].append(TypstText(set_font(english, LATIN_FONT), scale=SCALE))
+
+            # for s in states[1]:
+            #     print(s.text)
+
+            for i in range(len(states[0])):
+                # Start the transliteration in the center
+                states[1][i].points.move_to(ORIGIN)
+
+                # Move sa and en above and below
+                states[0][i].points.next_to(states[1][i], UP * SCALE)
+                states[2][i].points.next_to(states[1][i], DOWN * SCALE)
+
+                # Initial write on
+                if i == 0:
+                    line_animations.append(
+                        Succession(
+                            Wait(1.0),
+                            Aligned(
+                                *(Write(s[i]) for s in states),
+                                duration=1.0,
+                            ),
+                            Wait(1.0),
+                        )
+                    )
+
+                # Transformation into current state
+                if i > 0:
+                    change_type = state_changes[i - 1]
+
+                    assert isinstance(change_type, AnimationChange), (
+                        "Invalid Change Type"
+                    )
+
+                    match change_type:
+                        case AnimationChange.COLORS:
+                            duration = 0.33
+                        case AnimationChange.SWARAS:
+                            duration = 0.44
+                        case AnimationChange.SPELLS:
+                            duration = 0.66
+                        case AnimationChange.EXPAND:
+                            duration = 0.99
+
+                    delay = duration * 0.15
+
+                    # Swara removals get a special animation for optimal seamlessness
+                    if change_type == AnimationChange.SWARAS:
+                        mismatch = (
+                            lambda item, p, **kwargs: FadeOut(
+                                item, at=delay, shift=UP * 0.1, **kwargs
+                            ),
+                            lambda item, p, **kwargs: GrowFromEdge(
+                                item, DOWN, **kwargs
+                            ),
+                        )
+                    else:
+                        mismatch = (
+                            lambda item, p, **kwargs: ShrinkToEdge(
+                                item, UP, at=delay, **kwargs
+                            ),
+                            lambda item, p, **kwargs: GrowFromEdge(
+                                item, DOWN, **kwargs
+                            ),
+                        )
+
+                    line_animations.append(
+                        Aligned(
+                            *(
+                                LenientTransformMatchingDiff(
+                                    s[i - 1],
+                                    s[i],
+                                    duration=duration,
+                                    mismatch=mismatch,  # type: ignore[arg-type]
+                                    name=str(change_type.value),
+                                )
+                                for s in states
+                            ),
+                        )
+                    )
+
+                    if change_type == AnimationChange.COLORS:
+                        line_animations.append(Wait(0.25))
+
+            line_animations.append(
+                Succession(Wait(2.0), Aligned(*(FadeOut(s[-1]) for s in states)))
+            )
+
+        self.play(Succession(*line_animations, name="Line"))
+
+
+class ExplainSloka(Timeline):
+    lines: List[Line]
+
+    def __init__(self, lines: List[Line]):
+        super().__init__()
+        self.lines = lines
+
+    def construct(self):
         animations = []
         for line in self.lines:
-            # When doing translation pages we do an utterance at a time rather
-            # than a line at a time.
-            for vAkya in line.vAkyAni:
-                refs: List[tuple[str, List[tuple[int, int]]]] = []
-
-                visited = set()
-                for token in vAkya.tokens:
-                    refs += process_token(vAkya.english, token, visited)
-
-                visited = set()
-                colorings = build_colorings(vAkya.tokens, COLORS)
-                display_tokens = [
-                    build_display_token(vAkya.english, token, visited, colorings)
-                    for token in vAkya.tokens
-                ]
-                frames = frames_for_vakya(display_tokens)
-
-                # sa, tr, en
-                states = [[], [], []]
-                state_changes = []
-
-                for i in range(len(frames) - 1):
-                    # compare this frame to the next frame
-                    a = frames[i]
-                    b = frames[i + 1]
-
-                    if len(a) != len(b):
-                        state_changes.append(AnimationChange.EXPAND)
-                    else:
-                        swara_removal = False
-                        spelling_intact = True
-                        color_intact = True
-                        for j in range(len(a)):
-                            swara_removal |= (
-                                unswara(a[j].slp1) != a[j].slp1
-                                and unswara(a[j].slp1) == b[j].slp1
-                            )
-                            spelling_intact &= a[j].slp1 == b[j].slp1
-                            color_intact &= a[j].color == b[j].color
-                        if swara_removal:
-                            state_changes.append(AnimationChange.SWARAS)
-                        elif not spelling_intact:
-                            state_changes.append(AnimationChange.SPELLS)
-                        elif not color_intact:
-                            state_changes.append(AnimationChange.COLORS)
-                        else:
-                            raise ValueError(
-                                "I don't know what kind of change occurred"
-                            )
-
-                print([*((lambda c: c.value)(s) for s in state_changes)])
-
-                for i, frame in enumerate(frames):
-                    sanskrit = ""
-                    translit = ""
-                    english = ""
-
-                    for token in frame:
-                        sanskrit += (
-                            typst_code(token.slp1, Language.SANSKRIT, token.color) + " "
-                        )
-                        iast = transform_text(token.slp1, Language.TRANSLIT)
-                        translit += Junicode_translit(iast, token.color) + " "
-
-                    all_tuples = [
-                        ((start, end), token.color)
-                        for token in frame
-                        for start, end in token.english_spans
-                    ]
-                    all_tuples.append(((len(vAkya.english), len(vAkya.english)), WHITE))
-
-                    cursor = 0
-                    plain_english = 0
-                    for [start, end], color in sorted(
-                        all_tuples, key=lambda item: item[0]
-                    ):
-                        # Emit any unspanned text before this span
-                        if start > cursor:
-                            missing_text = vAkya.english[cursor:start]
-                            plain_english += len(missing_text)
-                            for m in MISSING_CHUNK_RE.finditer(missing_text):
-                                piece = m.group()
-                                if TYPST_CMD_RE.fullmatch(piece):
-                                    english += piece
-                                else:
-                                    english += typst_code(
-                                        piece, Language.ENGLISH, WHITE
-                                    )
-                                    # Only add a space if the original text has a space right after this piece
-                                    next_pos = m.end()
-                                    if (
-                                        next_pos < len(missing_text)
-                                        and missing_text[next_pos] == " "
-                                    ):
-                                        english += " "
-
-                        if start == end:
-                            break
-
-                        # Emit the colored span
-                        english_token = vAkya.english[start:end]
-                        plain_english += len(english_token)
-                        english += typst_code_safe(
-                            english_token, Language.ENGLISH, color
-                        )
-                        cursor = end
-
-                        # Consume a trailing space so missing_text never starts with one
-                        if cursor < len(vAkya.english) and vAkya.english[cursor] == " ":
-                            english += " "
-                            cursor += 1
-
-                    states[0].append(
-                        TypstText(set_font(sanskrit, SANSKRIT_FONT), scale=SCALE)
-                    )
-                    states[1].append(
-                        TypstText(set_font(translit, LATIN_FONT), scale=SCALE)
-                    )
-                    states[2].append(
-                        TypstText(set_font(english, LATIN_FONT), scale=SCALE)
-                    )
-
-                # for s in states[1]:
-                #     print(s.text)
-
-                for i in range(len(states[0])):
-                    # Start the transliteration in the center
-                    states[1][i].points.move_to(ORIGIN)
-
-                    # Move sa and en above and below
-                    states[0][i].points.next_to(states[1][i], UP / SCALE * 4.0)
-                    states[2][i].points.next_to(states[1][i], DOWN / SCALE * 4.0)
-
-                    # Initial write on
-                    if i == 0:
-                        animations.append(
-                            Succession(
-                                Wait(1.0),
-                                Aligned(
-                                    *(Write(s[i]) for s in states),
-                                    duration=1.0,
-                                ),
-                                Wait(1.0),
-                            )
-                        )
-
-                    # Transformation into current state
-                    if i > 0:
-                        change_type = state_changes[i - 1]
-
-                        assert isinstance(change_type, AnimationChange), (
-                            "Invalid Change Type"
-                        )
-
-                        match change_type:
-                            case AnimationChange.COLORS:
-                                duration = 0.33
-                            case AnimationChange.SWARAS:
-                                duration = 0.44
-                            case AnimationChange.SPELLS:
-                                duration = 0.66
-                            case AnimationChange.EXPAND:
-                                duration = 0.99
-
-                        delay = duration * 0.15
-
-                        # Swara removals get a special animation for optimal seamlessness
-                        if change_type == AnimationChange.SWARAS:
-                            mismatch = (
-                                lambda item, p, **kwargs: FadeOut(
-                                    item, at=delay, shift=UP * 0.1, **kwargs
-                                ),
-                                lambda item, p, **kwargs: GrowFromEdge(
-                                    item, DOWN, **kwargs
-                                ),
-                            )
-                        else:
-                            mismatch = (
-                                lambda item, p, **kwargs: ShrinkToEdge(
-                                    item, UP, at=delay, **kwargs
-                                ),
-                                lambda item, p, **kwargs: GrowFromEdge(
-                                    item, DOWN, **kwargs
-                                ),
-                            )
-
-                        animations.append(
-                            Aligned(
-                                *(
-                                    LenientTransformMatchingDiff(
-                                        s[i - 1],
-                                        s[i],
-                                        duration=duration,
-                                        mismatch=mismatch,  # type: ignore[arg-type]
-                                        name=str(change_type.value),
-                                    )
-                                    for s in states
-                                ),
-                            )
-                        )
-
-                        if change_type == AnimationChange.COLORS:
-                            animations.append(Wait(0.25))
-
-                animations.append(
-                    Succession(Wait(2.0), Aligned(*(FadeOut(s[-1]) for s in states)))
-                )
-        return animations
+            line_timeline = ExplainLine(line).build().to_item()
+            line_timeline.show()
+            self.forward_to(line_timeline.end)
+        self.play(Succession(*animations))
 
 
-def extract_rgb_values(s):
-    return "".join(re.findall(r'rgb\("(#[0-9A-Fa-f]{6})"\)', s))
-
-
-class AnimationChange(Enum):
-    # Swara removal
-    SWARAS = "Swara"
-    # Other spelling changes
-    SPELLS = "Spelling"
-    # Color changes only
-    COLORS = "Colors"
-    # Node quantity changes
-    EXPAND = "Expansion"
-
-
-class NiruktaFile:
-    def teach(self) -> Succession:
-        return Succession()
-
-
-@dataclass
-class SutraFile(NiruktaFile):
+class SutraFile(Timeline):
     citation: str
     slokas: List[Sloka]
 
-    def teach(self) -> Succession:
-        animations = []
+    def __init__(self, citation: str, slokas: List[Sloka]):
+        super().__init__()
+        self.citation = citation
+        self.slokas = slokas
+
+    def construct(self):
+        # animations = []
         citation = TypstText(
             set_font(typst_code(self.citation, Language.SANSKRIT), INTRO_FONT),
             scale=SCALE,
@@ -548,33 +570,42 @@ class SutraFile(NiruktaFile):
         citation.points.move_to(ORIGIN)
 
         # Introduce the text by its title
-        animations.extend(
-            [
+        self.play(
+            Succession(
                 Write(citation),
                 Wait(1.5),
                 FadeOut(citation),
-            ]
+            )
         )
 
         for sloka in self.slokas:
-            animations.extend(sloka.render_intro())
+            introduction = IntroduceSloka(sloka.lines).build().to_item().show()
+            self.forward_to(introduction.end)
+            # t.play(introduction)
 
         for sloka in self.slokas:
-            animations.extend(sloka.explain())
+            for line in sloka.lines:
+                animation = ExplainLine(line).build().to_item().show()
+                self.forward_to(animation.end)
 
-        return Succession(*animations)
 
-
-@dataclass
-class SlokaFile(NiruktaFile):
+class SlokaFile(Timeline):
     citation: str
     sloka: Sloka
 
-    def teach(self) -> Succession:
-        animations = self.sloka.render_intro(citation=self.citation)
-        animations.extend(self.sloka.explain())
+    def __init__(self, citation: str, sloka: Sloka):
+        super().__init__()
+        self.citation = citation
+        self.sloka = sloka
 
-        return Succession(*animations)
+    def construct(self):
+        introduction = IntroduceSloka(self.sloka.lines, self.citation).build().to_item()
+        introduction.show()
+        self.forward_to(introduction.end)
+
+        explanation = ExplainSloka(self.sloka.lines).build().to_item()
+        explanation.show()
+        self.forward_to(explanation.end)
 
 
 # Source - https://stackoverflow.com/a/1884277
@@ -804,7 +835,7 @@ SLOKA_GRAMMAR_STR = r"""
     etym_content    = ~r"[^}]+"
 
     # '..' must precede '.' so the longer match wins
-    punct           = ~r"\.\.|[.;]"
+    punct = ~r"\.+(?:\s*\d+\s*[.,;]*)?|[;,]"
 
     # SLP1: anything that isn't a format metacharacter or whitespace
     slp1            = ~r"[^[\]{}.;=+()\"\s]+"

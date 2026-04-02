@@ -178,6 +178,31 @@ class Gloss:
     text: str
     etymological: bool = False
 
+    def find_reference(
+        self, english: str, visited: Set[tuple[int, int]]
+    ) -> tuple[int, int]:
+        n = 1
+        while True:
+            gi = find_nth(english, self.text, n)
+
+            assert gi >= 0, (
+                "Gloss cannot reference text not contained in the english translation!\n"
+                + f'Tried to find "{self.text}" in "{english}" but was unable.'
+            )
+
+            index = (gi, gi + len(self.text))
+
+            assert english[index[0] : index[1]] == self.text, (
+                "Invalid gloss index into english text"
+            )
+
+            # If we've already found this instance of the gloss text
+            if index in visited:
+                # Find the next one
+                n += 1
+            else:
+                return index
+
 
 @dataclass
 class SimpleToken:
@@ -185,6 +210,18 @@ class SimpleToken:
 
     slp1: str
     glosses: List[Gloss] = field(default_factory=list)
+
+    def gloss_refs(
+        self, english: str, visited: Set[tuple[int, int]]
+    ) -> List[tuple[int, int]]:
+        gloss_refs: List[tuple[int, int]] = []
+        for gloss in self.glosses:
+            if not gloss.etymological:
+                ref = gloss.find_reference(english, visited)
+                visited.add(ref)
+                gloss_refs.append(ref)
+
+        return gloss_refs
 
 
 @dataclass
@@ -661,35 +698,7 @@ def process_token(
     refs: List[tuple[str, List[tuple[int, int]]]] = []
 
     if isinstance(token, SimpleToken):
-        gloss_refs: List[tuple[int, int]] = []
-
-        for gloss in token.glosses:
-            n = 1
-            while True:
-                gi = find_nth(english, gloss.text, n)
-
-                assert gi >= 0, (
-                    "Gloss cannot reference text not contained in the english translation!"
-                    + "\n"
-                    + f'Tried to find "{gloss.text}" in "{english}" but was unable.'
-                )
-
-                index = (gi, gi + len(gloss.text))
-
-                assert english[index[0] : index[1]] == gloss.text, (
-                    "Invalid gloss index into english text"
-                )
-
-                # If we've already found this instance of the gloss text
-                if index in visited:
-                    # Find the next one
-                    n += 1
-                else:
-                    gloss_refs.append(index)
-                    visited.add(index)
-                    break
-
-        refs.append((token.slp1, gloss_refs))
+        refs.append((token.slp1, token.gloss_refs(english, visited)))
         return refs
     elif isinstance(token, CompoundToken):
         # assume for now that there are no "etymological" glosses and that
@@ -754,32 +763,7 @@ def build_display_token(
     colorings: Dict[str, str],
 ) -> DisplayToken:
     if isinstance(token, SimpleToken):
-        spans: List[tuple[int, int]] = []
-
-        for gloss in token.glosses:
-            n = 1
-            while True:
-                gi = find_nth(english, gloss.text, n)
-
-                assert gi >= 0, (
-                    "Gloss cannot reference text not contained in the english translation!"
-                    + "\n"
-                    + f'Tried to find "{gloss.text}" in "{english}" but was unable.'
-                )
-
-                index = (gi, gi + len(gloss.text))
-
-                assert english[index[0] : index[1]] == gloss.text, (
-                    "Invalid gloss index into english text"
-                )
-
-                if index in visited:
-                    n += 1
-                else:
-                    spans.append(index)
-                    visited.add(index)
-                    break
-
+        spans = token.gloss_refs(english, visited)
         unswarad = unswara(token.slp1)
 
         leaf = DisplayToken(
@@ -962,10 +946,7 @@ class SlokaVisitor(NodeVisitor):
 
     def visit_simple_token(self, _, visited_children):
         slp1, glosses = visited_children
-        normal_glosses: List[Gloss] = [
-            gloss for gloss in glosses if not gloss.etymological
-        ]
-        return SimpleToken(slp1=slp1, glosses=normal_glosses)
+        return SimpleToken(slp1=slp1, glosses=glosses)
 
     def visit_gloss(self, _, visited_children):
         return visited_children[0]

@@ -332,6 +332,10 @@ class ExplainLine(Timeline):
         super().__init__()
         self.line = line
 
+    @property
+    def gui_name(self) -> str:
+        return " | ".join(vAkya.english for vAkya in self.line.vAkyAni)
+
     def construct(self):
         line_animations = []
         # When doing translation pages we do an utterance at a time rather
@@ -558,6 +562,10 @@ class SutraFile(Timeline):
         self.citation = citation
         self.slokas = slokas
 
+    @property
+    def gui_name(self) -> str:
+        return self.citation
+
     def construct(self):
         # animations = []
         citation = TypstText(
@@ -604,6 +612,10 @@ class SlokaFile(Timeline):
         super().__init__()
         self.citation = citation
         self.sloka = sloka
+
+    @property
+    def gui_name(self) -> str:
+        return self.citation
 
     def construct(self):
         introduction = IntroduceSloka(self.sloka, self.citation).build().to_item()

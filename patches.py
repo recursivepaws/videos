@@ -1,4 +1,5 @@
 import os
+import re
 import typst
 import janim.utils.typst_compile as tc
 from janim.gui.timeline_view import TimelineView
@@ -31,33 +32,22 @@ if not getattr(TimelineView, "_init_label_group_patched", False):
     TimelineView._init_label_group_patched = True  # type: ignore[attr-defined]
 
 
-# Use gui_name property on Timeline subclasses to customise the label in the GUI
+_ADDR_SUFFIX_RE = re.compile(r" at 0x[0-9A-Fa-f]+ \(item at 0x[0-9A-Fa-f]+\)$")
+
 if not getattr(TimelineView, "_make_subtimeline_name_patched", False):
     _orig_make_subtimeline_label_group = TimelineView.make_subtimeline_label_group
 
     @staticmethod
     def _patched_make_subtimeline_label_group(built):
-        renames = {}
-        for item in built.timeline.subtimeline_items:
-            tl = item._built.timeline
-            if hasattr(tl, "gui_name"):
-                cls = tl.__class__
-                renames[tl] = cls.__name__
-                cls.__name__ = tl.gui_name
-        try:
-            result = _orig_make_subtimeline_label_group(built)
-        finally:
-            for tl, original in renames.items():
-                tl.__class__.__name__ = original
+        result = _orig_make_subtimeline_label_group(built)
 
-        # Strip the ' at 0x... (item at 0x...)' suffix from renamed labels
-        gui_names = {tl.gui_name for tl in renames}
         if result is not None:
-            for label in result.labels:
-                for gui_name in gui_names:
-                    if label.name.startswith(gui_name + " at 0x"):
-                        label.name = gui_name
-                        break
+            for label, item in zip(result.labels, built.timeline.subtimeline_items):
+                tl = item._built.timeline
+                if hasattr(tl, "gui_name"):
+                    label.name = tl.gui_name
+                else:
+                    label.name = _ADDR_SUFFIX_RE.sub("", label.name)
 
         return result
 

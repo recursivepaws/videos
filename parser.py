@@ -238,109 +238,24 @@ class VerseLine:
 
 
 @dataclass
-class Line:
+class Line(Timeline):
     """A stanza-level grouping of verse lines (between --- line --- markers)."""
 
     vAkyAni: List[VerseLine]
 
-
-@dataclass
-class Sloka:
-    """"""
-
-    lines: List[Line]
-
-    def group(self):
-        sloka = []
-
-        for line in self.lines:
-            sanskrit = ""
-            for vAkya in line.vAkyAni:
-                for token in vAkya.tokens:
-                    if isinstance(token, str):
-                        sanskrit += token
-                    else:
-                        sanskrit += token.slp1
-
-                    sanskrit += " "
-
-            sloka.append(
-                TypstText(
-                    set_font(typst_code(sanskrit, Language.SANSKRIT), INTRO_FONT),
-                    scale=SCALE,
-                )
-            )
-
-        sloka = Group(*sloka)
-        sloka.points.arrange(DOWN)
-        return sloka
-
-
-def extract_rgb_values(s):
-    return "".join(re.findall(r'rgb\("(#[0-9A-Fa-f]{6})"\)', s))
-
-
-class AnimationChange(Enum):
-    # Swara removal
-    SWARAS = "Swara"
-    # Other spelling changes
-    SPELLS = "Spelling"
-    # Color changes only
-    COLORS = "Colors"
-    # Node quantity changes
-    EXPAND = "Expansion"
-
-
-class IntroduceSloka(Timeline):
-    sloka: Sloka
-    citation: Optional[str]
-
-    def __init__(self, sloka: Sloka, citation: Optional[str] = None):
+    def __init__(self, vAkyAni: List[VerseLine]):
         super().__init__()
-        self.sloka = sloka
-        self.citation = citation
-
-    def construct(self):
-        sloka_group = self.sloka.group()
-
-        for line in sloka_group:
-            self.play(Write(line, duration=4.0))
-
-        if self.citation is not None:
-            citation_text = TypstText(
-                set_font(typst_code(self.citation, Language.SANSKRIT), INTRO_FONT),
-                scale=SCALE,
-            )
-            citation_text.points.next_to(sloka_group, DOWN)
-            self.play(
-                Wait(2.0),
-                Write(citation_text, duration=1.0),
-                Wait(1.0),
-                FadeOut(Group(sloka_group, citation_text)),
-            )
-        else:
-            self.play(
-                Wait(1.0),
-                FadeOut(sloka_group),
-            )
-
-
-class ExplainLine(Timeline):
-    line: Line
-
-    def __init__(self, line: Line):
-        super().__init__()
-        self.line = line
+        self.vAkyAni = vAkyAni
 
     @property
     def gui_name(self) -> str:
-        return " | ".join(vAkya.english for vAkya in self.line.vAkyAni)
+        return " | ".join(vAkya.english for vAkya in self.vAkyAni)
 
     def construct(self):
         line_animations = []
         # When doing translation pages we do an utterance at a time rather
         # than a line at a time.
-        for vAkya in self.line.vAkyAni:
+        for vAkya in self.vAkyAni:
             refs: List[tuple[str, List[tuple[int, int]]]] = []
 
             visited = set()
@@ -537,6 +452,87 @@ class ExplainLine(Timeline):
         self.play(Succession(*line_animations, name="Line"))
 
 
+@dataclass
+class Sloka:
+    """"""
+
+    lines: List[Line]
+
+    def group(self):
+        sloka = []
+
+        for line in self.lines:
+            sanskrit = ""
+            for vAkya in line.vAkyAni:
+                for token in vAkya.tokens:
+                    if isinstance(token, str):
+                        sanskrit += token
+                    else:
+                        sanskrit += token.slp1
+
+                    sanskrit += " "
+
+            sloka.append(
+                TypstText(
+                    set_font(typst_code(sanskrit, Language.SANSKRIT), INTRO_FONT),
+                    scale=SCALE,
+                )
+            )
+
+        sloka = Group(*sloka)
+        sloka.points.arrange(DOWN)
+        return sloka
+
+
+def extract_rgb_values(s):
+    return "".join(re.findall(r'rgb\("(#[0-9A-Fa-f]{6})"\)', s))
+
+
+class AnimationChange(Enum):
+    # Swara removal
+    SWARAS = "Swara"
+    # Other spelling changes
+    SPELLS = "Spelling"
+    # Color changes only
+    COLORS = "Colors"
+    # Node quantity changes
+    EXPAND = "Expansion"
+
+
+class IntroduceSloka(Timeline):
+    sloka: Sloka
+    citation: Optional[str]
+
+    def __init__(self, sloka: Sloka, citation: Optional[str] = None):
+        super().__init__()
+        self.sloka = sloka
+        self.citation = citation
+
+    def construct(self):
+        sloka_group = self.sloka.group()
+
+        for line in sloka_group:
+            self.play(Write(line, duration=4.0))
+
+        if self.citation is not None:
+            citation_text = TypstText(
+                set_font(typst_code(self.citation, Language.SANSKRIT), INTRO_FONT),
+                scale=SCALE,
+            )
+            citation_text.points.next_to(sloka_group, DOWN)
+            self.play(
+                Wait(2.0),
+                Write(citation_text, duration=1.0),
+                Wait(1.0),
+                FadeOut(Group(sloka_group, citation_text)),
+            )
+        else:
+            self.play(
+                Wait(1.0),
+                FadeOut(sloka_group),
+            )
+
+
 class ExplainSloka(Timeline):
     lines: List[Line]
 
@@ -547,7 +543,7 @@ class ExplainSloka(Timeline):
     def construct(self):
         animations = []
         for line in self.lines:
-            line_timeline = ExplainLine(line).build().to_item()
+            line_timeline = line.build().to_item()
             line_timeline.show()
             self.forward_to(line_timeline.end)
         self.play(Succession(*animations))
@@ -600,7 +596,7 @@ class SutraFile(Timeline):
 
         for sloka in self.slokas:
             for line in sloka.lines:
-                animation = ExplainLine(line).build().to_item().show()
+                animation = line.build().to_item().show()
                 self.forward_to(animation.end)
 
 

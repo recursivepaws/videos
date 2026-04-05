@@ -13,6 +13,7 @@ from inflection import Case, SanskritInflection
 from aksharamukha import transliterate
 from janim.imports import (
     BLUE,
+    DEFAULT_ITEM_TO_EDGE_BUFF,
     DOWN,
     GREEN,
     MAROON,
@@ -20,16 +21,21 @@ from janim.imports import (
     ORIGIN,
     PINK,
     RED,
+    SMALL_BUFF,
     TEAL,
+    UL,
     UP,
+    UR,
     WHITE,
     YELLOW,
     Aligned,
+    FadeIn,
     FadeOut,
     Group,
     GrowFromEdge,
     ShrinkToEdge,
     Succession,
+    SurroundingRect,
     Timeline,
     TransformMatchingDiff,
     TypstText,
@@ -97,7 +103,8 @@ def text_box(text: str, color: str):
         return f'#box[#text(fill: rgb("{color}"))[{text}]]'
 
 
-INTRO_FONT = "Jaini"
+# INTRO_FONT = "Jaini"
+INTRO_FONT = "Tiro Devanagari Sanskrit"
 SANSKRIT_FONT = "Tiro Devanagari Sanskrit"
 LATIN_FONT = "Junicode"
 
@@ -114,6 +121,7 @@ class Language(Enum):
 
 TYPST_CMD_RE = re.compile(r"(#\w+\(\))")
 MISSING_CHUNK_RE = re.compile(r"#\w+\(\)|[a-zA-Z0-9']+|[^a-zA-Z0-9'\s#]+|#")
+DIGITS_RE = re.compile(r"\d+")
 
 
 def typst_code_safe(text: str, language: Language, color: str = WHITE) -> str:
@@ -513,6 +521,20 @@ class Sloka:
     """"""
 
     lines: List[Line]
+    number: Optional[int]
+
+    def __init__(self, lines: List[Line]) -> None:
+        number = None
+        for line in list(lines):
+            for vAyka in line.vAkyAni:
+                for token in vAyka.tokens:
+                    if isinstance(token, str):
+                        if match := DIGITS_RE.search(token):
+                            number = int(match.group())
+        self.lines = lines
+        self.number = number
+
+        pass
 
     def group(self):
         sloka = []
@@ -644,20 +666,40 @@ class SutraFile(Timeline):
         ]:
             self.play(animation)
 
-        sloka_groups = Group(*(s.group() for s in self.slokas))
-        sloka_groups[0].points.move_to(ORIGIN)
-        sloka_groups.points.arrange(DOWN)
-
-        for sloka_group in sloka_groups:
-            for line in sloka_group:
-                self.play(Write(line, duration=1.0))
-
-        self.play(FadeOut(sloka_groups))
-
         for sloka in self.slokas:
+            sloka_text = sloka.group()
+            sloka_text.points.scale(0.6)
+            sloka_text.points.to_border(UL, buff=SMALL_BUFF)
+            sloka_border = SurroundingRect(sloka_text, color=WHITE)
+            sloka_border.round_corners(0.25)
+
+            group = Group(sloka_text, sloka_border)
+
+            if sloka.number is not None:
+                print(f"SLOKA NUMBER: {sloka.number}")
+                number_text = TypstText(
+                    text_box(f"{sloka.number}", WHITE),
+                    scale=SCALE,
+                )
+                print(number_text.text)
+                number_text.points.to_border(UR, buff=SMALL_BUFF)
+
+                number_border = SurroundingRect(
+                    number_text,
+                    color=WHITE,
+                )
+                number_border.round_corners(0.25)
+                group.add(number_text)
+                group.add(number_border)
+
+            self.play(FadeIn(group))
+
+            # sloka.bui
             for line in sloka.lines:
                 animation = line.build().to_item().show()
                 self.forward_to(animation.end)
+
+            self.play(FadeOut(group))
 
 
 class SlokaFile(Timeline):
@@ -770,13 +812,13 @@ def build_display_token(
 ) -> DisplayToken:
     if isinstance(token, SimpleToken):
         spans = token.gloss_refs(english, visited)
-        for gloss in token.glosses:
-            if isinstance(gloss, EnglishGloss):
-                print("not a case")
-            else:
-                print("a case")
-                print(f"gloss in token: {token.slp1}\n{gloss}\n\n")
-                # token.slp1 = f"token.slp1}\\}}"
+        # for gloss in token.glosses:
+        # if isinstance(gloss, EnglishGloss):
+        #     print("not a case")
+        # else:
+        #     print("a case")
+        #     print(f"gloss in token: {token.slp1}\n{gloss}\n\n")
+        #     # token.slp1 = f"token.slp1}\\}}"
         unswarad = unswara(token.slp1)
 
         leaf = DisplayToken(
@@ -825,7 +867,7 @@ def build_display_token(
                     for gloss in part.glosses
                     if not isinstance(gloss, EnglishGloss)
                 )
-                print(f"etymglosses: {etym_glosses}")
+                # print(f"etymglosses: {etym_glosses}")
                 etymological_token_part = len(etym_glosses) > 0
 
             if etymological_token_part:

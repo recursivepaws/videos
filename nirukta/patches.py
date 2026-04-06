@@ -10,8 +10,8 @@ from fontTools.ttLib import TTCollection, TTFont, TTLibError
 from janim.utils.font_manager import list_fonts, get_fontext_synonyms
 
 # Override fonts dir to include custom fonts
-font_dir = os.path.join(os.path.dirname(__file__), "fonts")
-tc._typst_fonts = typst.Fonts(True, True, [font_dir])
+font_dir = os.path.join(os.path.dirname(__file__), "..", "fonts")
+tc._typst_fonts = typst.Fonts(False, False, [font_dir])
 
 db = get_database()
 

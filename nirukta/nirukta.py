@@ -1,19 +1,20 @@
-from typing import Union
+from __future__ import annotations
 from janim.imports import RED, Config, Timeline
-from parser import SlokaFile, SutraFile
+from nirukta.util import is_nirukta_file, file_to_timeline
 
 
 class Nirukta(Timeline):
-    nirukta: Union[SlokaFile, SutraFile]
+    nirukta: Timeline
     CONFIG = Config(fps=24)
 
     @property
     def gui_color(self) -> str:
         return RED
 
-    def __init__(self, nirukta: Union[SlokaFile, SutraFile]):
+    def __init__(self, file: str):
         super().__init__()
-        self.nirukta = nirukta
+        assert is_nirukta_file(file), "Invalid file"
+        self.nirukta = file_to_timeline(file)
 
     def construct(self):
         animation = self.nirukta.build().to_item().show()

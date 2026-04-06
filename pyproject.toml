@@ -1,5 +1,5 @@
 [project]
-name = "nikurta"
+name = "nirukta"
 version = "0.1.0"
 description = "Procedurally generated Sanskrit grammar animations."
 readme = "README.md"
@@ -10,3 +10,7 @@ dependencies = [
   "manim-devanagari>=0.2.2",
   "parsimonious>=0.11.0",
 ]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

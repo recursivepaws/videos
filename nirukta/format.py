@@ -4,7 +4,8 @@ import sys
 
 from typing import Union
 
-from parser import CompoundToken, Gloss, Line, SimpleToken, SlokaFile, VerseLine, parse
+from parser import CompoundToken, Gloss, Line, SimpleToken, SlokaFile, Utterance, parse
+
 
 TokenType = Union[SimpleToken, CompoundToken, str]
 
@@ -44,7 +45,7 @@ def fmt_token(token: TokenType) -> str:
         return fmt_compound(token)
 
 
-def fmt_verse_line(vline: VerseLine) -> str:
+def fmt_verse_line(vline: Utterance) -> str:
     # Every token (including punctuation) is separated by a single space.
     # The first token has no leading space; all subsequent ones do.
     parts: list[str] = []

@@ -709,9 +709,9 @@ wheels = [
 ]
 
 [[package]]
-name = "nikurta"
+name = "nirukta"
 version = "0.1.0"
-source = { virtual = "." }
+source = { editable = "." }
 dependencies = [
     { name = "aksharamukha" },
     { name = "janim", extra = ["gui"] },

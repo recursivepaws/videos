@@ -5,10 +5,32 @@ import janim.utils.typst_compile as tc
 from janim.gui.timeline_view import TimelineView
 from janim.gui.label import LazyLabelGroup, LabelGroup
 from PySide6.QtGui import QColor
+from janim.utils.font.database import FontInfo, get_database
+from fontTools.ttLib import TTCollection, TTFont, TTLibError
+from janim.utils.font_manager import list_fonts, get_fontext_synonyms
 
 # Override fonts dir to include custom fonts
 font_dir = os.path.join(os.path.dirname(__file__), "fonts")
 tc._typst_fonts = typst.Fonts(True, True, [font_dir])
+
+db = get_database()
+
+# Now inject custom fonts from your font_dir into the live database
+extensions = get_fontext_synonyms("ttf")
+for filepath in list_fonts(font_dir, extensions):
+    try:
+        fonts = (
+            TTCollection(filepath, lazy=True).fonts
+            if filepath.endswith("ttc")
+            else [TTFont(filepath, lazy=True)]
+        )
+    except TTLibError:
+        continue
+
+    for i, font in enumerate(fonts):
+        info = FontInfo(filepath, font, i)
+        db.family_by_name[info.family_name].add(info)
+        db.font_by_full_name[info.full_name] = info
 
 
 # Recursively expand all timeline dropdowns in the GUI by default

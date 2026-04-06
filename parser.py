@@ -36,6 +36,7 @@ from janim.imports import (
     ShrinkToEdge,
     Succession,
     SurroundingRect,
+    Text,
     Timeline,
     TransformMatchingDiff,
     TypstText,
@@ -652,6 +653,11 @@ class SutraFile(Timeline):
         return ORANGE
 
     def construct(self):
+        txt = Text("The first line.\nThe second line.\nThe third line.")
+        txt.show()
+        self.play(Wait(3))
+        self.play(FadeOut(txt))
+
         citation = TypstText(
             set_font(typst_code(self.citation, Language.SANSKRIT), INTRO_FONT),
             scale=SCALE,
@@ -671,7 +677,8 @@ class SutraFile(Timeline):
             sloka_text.points.scale(0.6)
             sloka_text.points.to_border(UL, buff=SMALL_BUFF)
             sloka_border = SurroundingRect(sloka_text, color=WHITE)
-            sloka_border.round_corners(0.25)
+            sloka_border.apply_style(stroke_radius=0.01)
+            # sloka_border.round_corners(0.25)
 
             group = Group(sloka_text, sloka_border)
 

@@ -6,23 +6,31 @@ from janim.imports import WHITE
 from aksharamukha import transliterate
 
 
-def sloka_group(sloka: Sloka) -> Group:
+def sloka_group(sloka: Sloka) -> Group[TypstText]:
     group = []
 
-    for line in sloka.lines:
+    for li, line in enumerate(sloka.lines):
         sanskrit = ""
-        for vAkya in line.vAkyAni:
+        sanskritcode = ""
+        for vi, vAkya in enumerate(line.vAkyAni):
+            utterancetext = ""
             for token in vAkya.tokens:
                 if isinstance(token, str):
                     sanskrit += token
+                    utterancetext += token
                 else:
                     sanskrit += token.slp1
+                    utterancetext += token.slp1
 
                 sanskrit += " "
+                utterancetext += " "
+            utterance_code = f"{typst_code(utterancetext, Language.SANSKRIT)}<line_{li}_utterance_{vi}>"
+            sanskritcode += utterance_code
 
         group.append(
             TypstText(
-                set_font(typst_code(sanskrit, Language.SANSKRIT), INTRO_FONT),
+                # set_font(typst_code(sanskrit, Language.SANSKRIT), INTRO_FONT),
+                set_font(sanskritcode, INTRO_FONT),
                 scale=SCALE,
             )
         )

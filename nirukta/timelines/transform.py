@@ -5,9 +5,9 @@ from janim.imports import TransformMatchingDiff, normalize, np
 
 class LenientTransformMatchingDiff(TransformMatchingDiff):
     @dataclass
-    class MatchWrapper(TransformMatchingDiff.MatchWrapper):
+    class _MatchWrapper(TransformMatchingDiff._MatchWrapper):
         def __eq__(self, other):
-            if not isinstance(other, LenientTransformMatchingDiff.MatchWrapper):
+            if not isinstance(other, LenientTransformMatchingDiff._MatchWrapper):
                 return False
             if self.item.points.same_shape(other.item):
                 return True

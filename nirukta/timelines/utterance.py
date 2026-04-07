@@ -88,6 +88,7 @@ class UtteranceTimeline(Timeline):
         # sa, tr, en
         states = [[], [], []]
         state_changes = []
+        diffs = []
         expansion_ids = []
         eii = 0
 
@@ -112,24 +113,23 @@ class UtteranceTimeline(Timeline):
                     if animation[j].slp1 != b[j].slp1:
                         expansion_ids.append(animation[j].id)
             else:
-                swara_removal = False
-                spelling_intact = True
-                color_intact = True
+                swaras_changed = False
+                spelling_changed = True
+                color_changed = True
                 for j in range(len(animation)):
-                    swara_removal |= (
+                    swaras_changed |= (
                         unswara(animation[j].slp1) != animation[j].slp1
                         and unswara(animation[j].slp1) == b[j].slp1
                     )
-                    spelling_intact &= animation[j].slp1 == b[j].slp1
-                    color_intact &= animation[j].color == b[j].color
+                    spelling_changed |= animation[j].slp1 != b[j].slp1
+                    color_changed |= animation[j].color != b[j].color
 
-                if swara_removal:
+                if swaras_changed:
                     state_changes.append(AnimationChange.SWARAS)
-                elif not spelling_intact:
+                elif spelling_changed:
                     state_changes.append(AnimationChange.SPELLS)
-                elif not color_intact:
+                elif color_changed:
                     state_changes.append(AnimationChange.COLORS)
-                    # load_gun = True
                 else:
                     raise ValueError("I don't know what kind of change occurred")
 
@@ -214,14 +214,10 @@ class UtteranceTimeline(Timeline):
                 ]:
                     self.play(animation)
 
-            # SurroundingRect(radius)
             # Transformation into current state
             if i > 0:
                 change_type = state_changes[i - 1]
                 if change_type == AnimationChange.EXPAND:
-                    # if load_gun_v2:
-                    #     load_gun_v2 = False
-                    #     dt_label = expansion_ids.pop(0)
                     dt_label = expansion_ids[eii]
 
                     self.play(

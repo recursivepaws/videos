@@ -58,8 +58,8 @@
             uv sync --frozen
             export VIRTUAL_ENV=$PWD/.venv
             export LD_LIBRARY_PATH="$VIRTUAL_ENV/lib/python3.13/site-packages/PySide6:$LD_LIBRARY_PATH"
-            echo "TESTING COMPILATION"
-            uv run main.py
+            echo "OpenGL context:"
+            uv run opengl.py
           '';
         };
       });

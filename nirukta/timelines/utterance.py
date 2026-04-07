@@ -9,12 +9,19 @@ from janim.imports import (
     WHITE,
     Aligned,
     FadeOut,
+    Group,
     GrowFromEdge,
+    Indicate,
+    ShowCreationThenFadeAround,
+    ShowPassingFlashAround,
     ShrinkToEdge,
+    SurroundingRect,
     Timeline,
     TypstText,
     Wait,
     Write,
+    rush_into,
+    linear,
 )
 from nirukta.timelines.transform import LenientTransformMatchingDiff
 from nirukta.constants import (
@@ -81,14 +88,29 @@ class UtteranceTimeline(Timeline):
         # sa, tr, en
         states = [[], [], []]
         state_changes = []
+        expansion_ids = []
+        eii = 0
 
+        # load_gun = True
         for i in range(len(frames) - 1):
             # compare this frame to the next frame
             animation = frames[i]
             b = frames[i + 1]
 
+            # if load_gun:
+            #     load_gun = False
+            #     for j in range(len(animation)):
+            #         if animation[j].slp1 != b[j].slp1 or animation[j]:
+            #             print(f"appending {animation[j].id}")
+            #             expansion_ids.append(animation[j].id)
+            #             break
+            #     # expansion_ids.append(animation[j].id)
+
             if len(animation) != len(b):
                 state_changes.append(AnimationChange.EXPAND)
+                for j in range(len(animation)):
+                    if animation[j].slp1 != b[j].slp1:
+                        expansion_ids.append(animation[j].id)
             else:
                 swara_removal = False
                 spelling_intact = True
@@ -100,12 +122,14 @@ class UtteranceTimeline(Timeline):
                     )
                     spelling_intact &= animation[j].slp1 == b[j].slp1
                     color_intact &= animation[j].color == b[j].color
+
                 if swara_removal:
                     state_changes.append(AnimationChange.SWARAS)
                 elif not spelling_intact:
                     state_changes.append(AnimationChange.SPELLS)
                 elif not color_intact:
                     state_changes.append(AnimationChange.COLORS)
+                    # load_gun = True
                 else:
                     raise ValueError("I don't know what kind of change occurred")
 
@@ -117,9 +141,9 @@ class UtteranceTimeline(Timeline):
             english = ""
 
             for token in frame:
-                sanskrit += typst_code(token.slp1, Language.SANSKRIT, token.color) + " "
+                sanskrit += f"{typst_code(token.slp1, Language.SANSKRIT, token.color)}<{token.id}> "
                 iast = transform_text(token.slp1, Language.TRANSLIT)
-                translit += Junicode_translit(iast, token.color) + " "
+                translit += f"{Junicode_translit(iast, token.color)}<{token.id}> "
 
             all_tuples = [
                 ((start, end), token.color)
@@ -170,6 +194,7 @@ class UtteranceTimeline(Timeline):
         # for s in states[1]:
         #     print(s.text)
 
+        load_gun_v2 = True
         for i in range(len(states[0])):
             # Start the transliteration in the center
             states[1][i].points.move_to(ORIGIN)
@@ -189,21 +214,46 @@ class UtteranceTimeline(Timeline):
                 ]:
                     self.play(animation)
 
+            # SurroundingRect(radius)
             # Transformation into current state
             if i > 0:
                 change_type = state_changes[i - 1]
+                if change_type == AnimationChange.EXPAND:
+                    # if load_gun_v2:
+                    #     load_gun_v2 = False
+                    #     dt_label = expansion_ids.pop(0)
+                    dt_label = expansion_ids[eii]
+
+                    self.play(
+                        Aligned(
+                            *(
+                                ShowCreationThenFadeAround(
+                                    dt, surrounding_rect_config={"color": WHITE}
+                                )
+                                for dt in [
+                                    states[0][i - 1].get_label(dt_label),
+                                    states[1][i - 1].get_label(dt_label),
+                                ]
+                            )
+                        ),
+                        duration=0.4,
+                    )
+                    eii += 1
 
                 assert isinstance(change_type, AnimationChange), "Invalid Change Type"
+                rate_func = linear
 
                 match change_type:
                     case AnimationChange.COLORS:
                         duration = 0.33
+                        load_gun_v2 = True
                     case AnimationChange.SWARAS:
                         duration = 0.44
                     case AnimationChange.SPELLS:
-                        duration = 0.66
+                        duration = 0.55
                     case AnimationChange.EXPAND:
-                        duration = 0.99
+                        duration = 0.55
+                        rate_func = rush_into
 
                 delay = duration * 0.15
 
@@ -235,6 +285,7 @@ class UtteranceTimeline(Timeline):
                             )
                             for s in states
                         ),
+                        rate_func=rate_func,
                     )
                 )
 

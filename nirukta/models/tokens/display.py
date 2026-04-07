@@ -1,6 +1,6 @@
-
-from dataclasses import dataclass
 from typing import List
+import uuid
+from dataclasses import dataclass, field
 
 
 @dataclass
@@ -11,6 +11,7 @@ class DisplayToken:
     color: str  # resolved from colorings
     children: List["DisplayToken"]  # empty => leaf (SimpleToken or punct)
     english_spans: List[tuple[int, int]]  # the spans this token is responsible for
+    id: str = field(default_factory=lambda: str(uuid.uuid4()))
 
     @property
     def is_leaf(self) -> bool:

@@ -1,4 +1,4 @@
-from janim.imports import DOWN, Group, TypstText
+from janim.imports import DOWN, Group, TypstText, VItem
 from nirukta.constants import INTRO_FONT, SCALE
 from nirukta.models import Language, Sloka
 from nirukta.constants import TYPST_CMD_RE
@@ -108,3 +108,10 @@ def transform_text(text: str, language: Language):
 def typst_code(text: str, language: Language, color: str = WHITE):
     transformed = transform_text(text, language)
     return text_box(transformed, color)
+
+
+def scale_with_stroke(group: Group, factor: float) -> Group:
+    group.points.scale(factor)
+    for item in group.walk_descendants(VItem):
+        item.radius.set(item.radius.get() * factor)
+    return group

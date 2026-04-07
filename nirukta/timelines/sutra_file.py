@@ -4,29 +4,41 @@ from typing import List, Optional
 from janim.imports import (
     DOWN,
     GREY,
+    LEFT,
     MED_SMALL_BUFF,
     ORANGE,
     ORIGIN,
     RIGHT,
     UL,
+    UP,
     WHITE,
     Aligned,
     FadeIn,
     FadeOut,
     Group,
     Indicate,
+    Rect,
     Succession,
     SurroundingRect,
+    Text,
     Timeline,
+    Transform,
     TypstText,
     Wait,
     Write,
+    np,
 )
 from nirukta.constants import INTRO_FONT, SCALE
 from nirukta.models import Language, Sloka, SutraFile
 from nirukta.timelines import UtteranceTimeline
 from nirukta.timelines.line import LineTimeline
-from nirukta.render import set_font, text_box, typst_code, sloka_group
+from nirukta.render import (
+    scale_with_stroke,
+    set_font,
+    text_box,
+    typst_code,
+    sloka_group,
+)
 
 
 @dataclass
@@ -62,43 +74,33 @@ class SutraFileTimeline(Timeline):
         ]:
             self.play(animation)
 
+        group = Group()
         for sloka in self.slokas:
-            group = Group()
             sloka_text: Optional[Group[TypstText]] = None
             numbered = False
 
             if sloka.number is not None:
-                number_text = TypstText(
-                    text_box(f"{sloka.number}", WHITE),
-                    scale=SCALE,
-                )
-                number_text.points.to_border(UL, buff=MED_SMALL_BUFF)
-
-                number_border = SurroundingRect(
-                    number_text,
-                    color=WHITE,
-                )
-                number_border.round_corners(0.5)
-
                 sloka_text = sloka_group(sloka)
-                sloka_text.points.scale(0.6)
-                sloka_text.points.next_to(number_text, RIGHT / 2.0 + DOWN / 2.0)
+                number_label = Group(
+                    Rect(0.4, 0.4, fill_alpha=0.3),
+                    Text(f"{sloka.number}", font_size=22),
+                )
+                number_label.points.next_to(
+                    sloka_text, UP, buff=MED_SMALL_BUFF, aligned_edge=LEFT
+                )
+
                 sloka_text.anim.set(color=GREY)
                 sloka_border = SurroundingRect(
-                    Group(sloka_text, number_border), color=WHITE, buff=MED_SMALL_BUFF
+                    Group(sloka_text, number_label), color=WHITE, buff=MED_SMALL_BUFF
                 )
-                sloka_border.apply_style(stroke_radius=0.01)
 
-                group.add(number_text, number_border, sloka_text, sloka_border)
+                group = scale_with_stroke(
+                    Group(number_label, sloka_text, sloka_border), 0.5
+                )
+                group.points.to_border(UL, buff=MED_SMALL_BUFF)
 
                 print(f"SLOKA NUMBER: {sloka.number}")
                 numbered = True
-                # group.add(number_text)
-                # group.add(number_border)
-
-            # sloka_border.round_corners(0.25)
-
-            # group = Group(sloka_text, sloka_border)
 
             def grey_anim(sloka_text: Group[TypstText]):
                 return Aligned(
@@ -138,3 +140,5 @@ class SutraFileTimeline(Timeline):
 
             if numbered:
                 self.play(FadeOut(group))
+
+        # self.play(FadeOut(group))

@@ -113,25 +113,25 @@ class UtteranceTimeline(Timeline):
                     if animation[j].slp1 != b[j].slp1:
                         expansion_ids.append(animation[j].id)
             else:
-                swaras_changed = False
-                spelling_changed = True
-                color_changed = True
                 for j in range(len(animation)):
-                    swaras_changed |= (
+                    # Swaras changed
+                    if (
                         unswara(animation[j].slp1) != animation[j].slp1
                         and unswara(animation[j].slp1) == b[j].slp1
-                    )
-                    spelling_changed |= animation[j].slp1 != b[j].slp1
-                    color_changed |= animation[j].color != b[j].color
+                    ):
+                        state_changes.append(AnimationChange.SWARAS)
+                        break
+                    # Spelling changed
+                    elif animation[j].slp1 != b[j].slp1:
+                        state_changes.append(AnimationChange.SPELLS)
+                        break
+                    # Color changed
+                    elif animation[j].color != b[j].color:
+                        state_changes.append(AnimationChange.COLORS)
+                        break
 
-                if swaras_changed:
-                    state_changes.append(AnimationChange.SWARAS)
-                elif spelling_changed:
-                    state_changes.append(AnimationChange.SPELLS)
-                elif color_changed:
-                    state_changes.append(AnimationChange.COLORS)
-                else:
-                    raise ValueError("I don't know what kind of change occurred")
+                # else:
+                #     raise ValueError("I don't know what kind of change occurred")
 
         print([*((lambda c: c.value)(s) for s in state_changes)])
 

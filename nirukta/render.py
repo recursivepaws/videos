@@ -1,4 +1,10 @@
 from janim.imports import (
+    GREEN,
+    RED,
+    Aligned,
+    Cmpt_Rgbas,
+    DataUpdater,
+    ItemUpdater,
     SupportsAnim,
     AnimGroup,
     Succession,
@@ -11,8 +17,10 @@ from janim.imports import (
     ShrinkToEdge,
     TypstText,
     VItem,
+    ValueTracker,
     linear,
     rush_into,
+    there_and_back,
 )
 from nirukta.constants import INTRO_FONT, SCALE, TYPST_CMD_RE
 from nirukta.models import Language, Sloka
@@ -28,14 +36,32 @@ class Awaken(AnimGroup):
 
     def __init__(self, *anims: SupportsAnim, duration: float = 0.5, **kwargs) -> None:
         group = Group(*anims)
+        scale_tracker = ValueTracker(1.0)
+        color_tracker = ValueTracker(0.0)
+
+        def updater(data, _):
+            data.points.scale(scale_tracker.current().get_value())
+
+            t = color_tracker.current().get_value()
+            for cmpt in data.components.values():
+                if not isinstance(cmpt, Cmpt_Rgbas):
+                    continue
+                cmpt.mix(WHITE, factor=t)
+
         super().__init__(
-            Succession(
-                # Maximally auspicious scaling factor
-                Indicate(group, scale_factor=1.108, color=WHITE),
-                # Change the color to white as it returns to regular size
-                group.anim.set(color=WHITE),
-                lag_ratio=0.4,
-                duration=duration,
+            Aligned(
+                color_tracker.anim.set_value(1.0),
+                Succession(
+                    scale_tracker.anim.set_value(1.108), scale_tracker.anim.set_value(1)
+                ),
+                DataUpdater(
+                    group,
+                    updater,
+                    duration=duration,
+                    become_at_end=True,
+                    root_only=False,
+                ),
+                rate_func=linear,
             )
         )
 

@@ -34,7 +34,7 @@ from nirukta.models import Animation
 class Awaken(AnimGroup):
     label_color = C_LABEL_ANIM_ABSTRACT
 
-    def __init__(self, *anims: SupportsAnim, duration: float = 0.5, **kwargs) -> None:
+    def __init__(self, *anims: SupportsAnim, duration: float = 0.33, **kwargs) -> None:
         group = Group(*anims)
         scale_tracker = ValueTracker(1.0)
         color_tracker = ValueTracker(0.0)
@@ -62,6 +62,7 @@ class Awaken(AnimGroup):
                     root_only=False,
                 ),
                 rate_func=linear,
+                duration=duration,
             )
         )
 

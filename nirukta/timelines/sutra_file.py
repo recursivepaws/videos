@@ -96,7 +96,7 @@ class SutraFileTimeline(Timeline):
             def grey_anim(sloka_text: Group[TypstText]):
                 return Aligned(
                     *(line.anim.set(color=INACTIVE) for line in sloka_text),
-                    duration=1.0,
+                    duration=0.33,
                 )
 
             if numbered and sloka_text is not None:

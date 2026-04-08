@@ -250,5 +250,5 @@ class UtteranceTimeline(Timeline):
                 if diff == Animation.COLORS:
                     self.play(Wait(0.25))
 
-        self.play(Wait(2.0))
+        self.play(Wait(1.0))
         self.play(Aligned(*(FadeOut(s[-1]) for s in states)))

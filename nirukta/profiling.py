@@ -2,7 +2,7 @@ import cProfile
 import pstats
 import time
 
-with open("./blueprints/sUtrARi/SrIsarasvatIstotraM.sutra") as f:
+with open("./library/sUtrARi/SrIsarasvatIstotraM.sutra") as f:
     source = f.read()
 
 # --- parsing / logic stage ---

@@ -18,7 +18,7 @@ def choose_nirukta_file() -> str:
     if cached:
         return cached
 
-    prefix = "./blueprints"
+    prefix = "./library"
 
     end_loop = False
 

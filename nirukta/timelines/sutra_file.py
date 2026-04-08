@@ -2,13 +2,10 @@ from dataclasses import dataclass
 from typing import List, Optional
 
 from janim.imports import (
-    DOWN,
-    GREY_B,
     LEFT,
     MED_SMALL_BUFF,
     ORANGE,
     ORIGIN,
-    RIGHT,
     UL,
     UP,
     WHITE,
@@ -16,27 +13,21 @@ from janim.imports import (
     FadeIn,
     FadeOut,
     Group,
-    Indicate,
     Rect,
-    Succession,
     SurroundingRect,
     Text,
     Timeline,
-    Transform,
     TypstText,
     Wait,
     Write,
-    np,
 )
-from nirukta.constants import INTRO_FONT, SCALE
+from nirukta.constants import INACTIVE, INTRO_FONT, SCALE
 from nirukta.models import Language, Sloka, SutraFile
 from nirukta.timelines import UtteranceTimeline
-from nirukta.timelines.line import LineTimeline
 from nirukta.render import (
     Awaken,
     scale_with_stroke,
     set_font,
-    text_box,
     typst_code,
     sloka_group,
 )
@@ -104,7 +95,8 @@ class SutraFileTimeline(Timeline):
 
             def grey_anim(sloka_text: Group[TypstText]):
                 return Aligned(
-                    *(line.anim.set(color=GREY_B) for line in sloka_text), duration=1.0
+                    *(line.anim.set(color=INACTIVE) for line in sloka_text),
+                    duration=1.0,
                 )
 
             if numbered and sloka_text is not None:

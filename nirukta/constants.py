@@ -1,6 +1,6 @@
 import re
 
-from janim.imports import BLUE, GREEN, MAROON, ORANGE, PINK, RED, TEAL, YELLOW
+from janim.imports import BLUE, GREEN, MAROON, ORANGE, PINK, RED, TEAL, WHITE, YELLOW
 
 SCALE = 1.3
 INTRO_FONT = "Tiro Devanagari Sanskrit"
@@ -30,3 +30,6 @@ MISSING_CHUNK_RE = re.compile("|".join(known + [fallback]))
 
 DIGITS_RE = re.compile(r"\d+")
 ALPHA_RE = re.compile(r"[a-zA-Z]+")
+
+# I keep my shit fucking seven dimensional motherfucker
+INACTIVE = WHITE + "7D"

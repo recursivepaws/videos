@@ -5,23 +5,11 @@ from typing import List
 from janim.imports import (
     BLUE,
     DOWN,
-    GREEN,
-    GREY,
-    GREY_B,
     ORIGIN,
     UP,
     WHITE,
     Aligned,
     FadeOut,
-    GREY_B,
-    FocusOn,
-    Group,
-    GrowFromEdge,
-    Indicate,
-    ShowCreationThenFadeAround,
-    ShowPassingFlashAround,
-    ShrinkToEdge,
-    SurroundingRect,
     Timeline,
     TypstText,
     Wait,
@@ -33,6 +21,7 @@ from janim.imports import (
 from nirukta.timelines.transform import LenientTransformMatchingDiff
 from nirukta.constants import (
     COLORS,
+    INACTIVE,
     LATIN_FONT,
     MISSING_CHUNK_RE,
     SANSKRIT_FONT,
@@ -99,7 +88,7 @@ class UtteranceTimeline(Timeline):
         for i in range(len(display_tokens)):
             if _ := ALPHA_RE.search(display_tokens[i].slp1):
                 display_tokens[i].is_root = True
-                display_tokens[i].color = GREY_B
+                display_tokens[i].color = INACTIVE
                 log.debug(f"{display_tokens[i].slp1} is a `DisplayToken` root")
 
         frames = frames_for_vakya(display_tokens)
@@ -190,9 +179,7 @@ class UtteranceTimeline(Timeline):
                     assert cursor == a[0], "Cursor moved to span start"
 
                 # If it is represented in the current frame
-                inactive = WHITE + "7D"
-
-                color = next((color for b, color in frame_spans if a == b), inactive)
+                color = next((color for b, color in frame_spans if a == b), INACTIVE)
 
                 english += typst_code(
                     self.english[a[0] : a[1]],
@@ -202,6 +189,7 @@ class UtteranceTimeline(Timeline):
 
                 cursor += a[1] - a[0]
 
+            states[0].append(TypstText(set_font(sanskrit, SANSKRIT_FONT), scale=SCALE))
             states[1].append(TypstText(set_font(translit, LATIN_FONT), scale=SCALE))
             states[2].append(TypstText(set_font(english, LATIN_FONT), scale=SCALE))
 

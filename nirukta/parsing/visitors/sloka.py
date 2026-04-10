@@ -1,4 +1,5 @@
 import logging
+import os
 import traceback
 from typing import Optional
 from nirukta.inflection import Case, SanskritInflection
@@ -12,10 +13,31 @@ from nirukta.models import (
     Utterance,
 )
 from nirukta.models import SlokaFile
+from nirukta.parsing.grammars import SLOKA_GRAMMAR
 from parsimonious.nodes import NodeVisitor
 
 
 class SlokaVisitor(NodeVisitor):
+    file: str
+    dir: str
+    source: str
+
+    def __init__(self, file: str):
+        NodeVisitor.__init__(self)
+
+        print(f"Loading {file}...")
+
+        with open(file) as f:
+            self.source = f.read()
+
+        self.file = file
+        self.directory = os.path.dirname(self.file)
+
+    def parse(self) -> SlokaFile:
+        tree = SLOKA_GRAMMAR.parse(self.source)
+        return self.visit(tree)
+
+
     # -- top level ----------------------------------------------------------
 
     def visit_sloka(self, _, visited_children):

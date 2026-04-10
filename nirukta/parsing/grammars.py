@@ -41,8 +41,12 @@ SLOKA_GRAMMAR_STR = r"""
 
 SUTRA_GRAMMAR_STR = (
     r"""
-    sutra           = sloka inline_sloka* ws
+    sutra           = citation_line ws (inline_sloka / external_sloka)+ ws
     inline_sloka    = ws "=== sloka ===" ws line+ ws
+    external_sloka  = ws "=== sloka ===" ws file ws
+    file            = "file:" file_content
+    file_part    = ~r"[a-zA-Z0-9._]+"
+    file_content = file_part ("/" file_part)+
 """
     + "\n"
     + SLOKA_GRAMMAR_STR

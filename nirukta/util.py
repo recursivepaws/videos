@@ -4,8 +4,9 @@ from janim.imports import WHITE
 from aksharamukha import transliterate
 
 from nirukta.models.enums import Language
-from nirukta.parsing import parse_sloka, parse_sutra
 from nirukta.constants import SCALE, TYPST_CMD_RE
+from nirukta.parsing.visitors.sloka import SlokaVisitor
+from nirukta.parsing.visitors.sutra import SutraVisitor
 from nirukta.timelines import SlokaFileTimeline, SutraFileTimeline
 
 
@@ -59,11 +60,11 @@ def choose_nirukta_file() -> str:
 
 def file_to_timeline(chosen: str):
     print(f"Loading {chosen}...")
-
-    with open(chosen) as f:
-        source = f.read()
+    #
+    # with open(chosen) as f:
+    #     source = f.read()
 
     if ".sutra" in chosen:
-        return SutraFileTimeline(parse_sutra(source))
+        return SutraFileTimeline(SutraVisitor(chosen).parse())
     else:
-        return SlokaFileTimeline(parse_sloka(source))
+        return SlokaFileTimeline(SlokaVisitor(chosen).parse())

@@ -172,7 +172,7 @@ def Junicode_translit(iast: str, color: str) -> str:
 
 
 def set_font(text: str, font: str):
-    return f'#set text(font: "{font}", stroke: none)\n#set page(width: {240 * SCALE}pt)\n{text}'
+    return f'#set text(font: "{font}", stroke: none)\n#set page(width: {266 * SCALE}pt)\n{text}'
 
 
 def text_box(text: str, color: str, stroke_mode: bool = False):
